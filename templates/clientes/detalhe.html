@@ -33,9 +33,7 @@
 </a>
 
 <div class="actions-bar">
-  {% if request.user.perfil != 'vendedor' %}
   <a href="{% url 'clientes:editar' cliente.pk %}" class="btn btn-primary">Editar</a>
-  {% endif %}
   <span class="btn" style="cursor:default">
     {% if cliente.ativo %}<span class="badge badge-green">Ativo</span>{% else %}<span class="badge badge-gray">Inativo</span>{% endif %}
   </span>
@@ -73,6 +71,15 @@
       <div class="detail-row">
         <span class="detail-label">Cidade/UF</span>
         <span class="detail-value">{% if cliente.cidade %}{{ cliente.cidade }}/{{ cliente.uf }}{% else %}—{% endif %}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Localizacao</span>
+        <span class="detail-value">
+          {% if cliente.latitude and cliente.longitude %}
+            {{ cliente.latitude }}, {{ cliente.longitude }}
+            <a href="https://www.google.com/maps?q={{ cliente.latitude }},{{ cliente.longitude }}" target="_blank" rel="noopener" style="color:var(--blue);margin-left:.4rem;font-size:.75rem">Abrir no Maps</a>
+          {% else %}—{% endif %}
+        </span>
       </div>
     </div>
   </div>

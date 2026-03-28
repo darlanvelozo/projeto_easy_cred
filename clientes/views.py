@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -10,18 +11,21 @@ from .models import Cliente
 from .forms import ClienteForm
 
 
+def _rotas_do_vendedor(user):
+    return VendedorRota.objects.filter(
+        vendedor=user, ativo=True,
+    ).values_list('rota_id', flat=True)
+
+
 @login_required
 @requer_perfil('admin', 'gerente', 'vendedor')
 def cliente_lista(request):
     empresa = request.user.empresa
     qs = Cliente.objects.filter(empresa=empresa).select_related('rota').order_by('nome')
 
-    # Vendedor só vê clientes das suas rotas
+    # Vendedor so ve clientes das suas rotas
     if request.user.perfil == 'vendedor':
-        rotas_ids = VendedorRota.objects.filter(
-            vendedor=request.user, ativo=True
-        ).values_list('rota_id', flat=True)
-        qs = qs.filter(rota_id__in=rotas_ids)
+        qs = qs.filter(rota_id__in=_rotas_do_vendedor(request.user))
 
     # Busca
     q = request.GET.get('q', '').strip()
@@ -61,13 +65,10 @@ def cliente_detalhe(request, pk):
     empresa = request.user.empresa
     cliente = get_object_or_404(Cliente, pk=pk, empresa=empresa)
 
-    # Vendedor só vê clientes das suas rotas
+    # Vendedor so ve clientes das suas rotas
     if request.user.perfil == 'vendedor':
-        rotas_ids = VendedorRota.objects.filter(
-            vendedor=request.user, ativo=True
-        ).values_list('rota_id', flat=True)
-        if cliente.rota_id not in rotas_ids:
-            messages.error(request, 'Você não tem permissão para ver este cliente.')
+        if cliente.rota_id not in list(_rotas_do_vendedor(request.user)):
+            messages.error(request, 'Voce nao tem permissao para ver este cliente.')
             return redirect('clientes:lista')
 
     emprestimos = (
@@ -83,19 +84,21 @@ def cliente_detalhe(request, pk):
 
 
 @login_required
-@requer_perfil('admin', 'gerente')
+@requer_perfil('admin', 'gerente', 'vendedor')
 def cliente_criar(request):
     empresa = request.user.empresa
+    usuario = request.user
+
     if request.method == 'POST':
-        form = ClienteForm(request.POST, empresa=empresa)
+        form = ClienteForm(request.POST, empresa=empresa, usuario=usuario)
         if form.is_valid():
             cliente = form.save(commit=False)
             cliente.empresa = empresa
             cliente.save()
             messages.success(request, f'Cliente "{cliente.nome}" cadastrado com sucesso.')
-            return redirect('clientes:lista')
+            return redirect('clientes:detalhe', pk=cliente.pk)
     else:
-        form = ClienteForm(empresa=empresa)
+        form = ClienteForm(empresa=empresa, usuario=usuario)
 
     return render(request, 'clientes/form.html', {
         'form': form,
@@ -104,22 +107,73 @@ def cliente_criar(request):
 
 
 @login_required
-@requer_perfil('admin', 'gerente')
+@requer_perfil('admin', 'gerente', 'vendedor')
 def cliente_editar(request, pk):
     empresa = request.user.empresa
+    usuario = request.user
     cliente = get_object_or_404(Cliente, pk=pk, empresa=empresa)
 
+    # Vendedor so edita clientes das suas rotas
+    if usuario.perfil == 'vendedor':
+        if cliente.rota_id not in list(_rotas_do_vendedor(usuario)):
+            messages.error(request, 'Voce nao tem permissao para editar este cliente.')
+            return redirect('clientes:lista')
+
     if request.method == 'POST':
-        form = ClienteForm(request.POST, instance=cliente, empresa=empresa)
+        form = ClienteForm(request.POST, instance=cliente, empresa=empresa, usuario=usuario)
         if form.is_valid():
             form.save()
             messages.success(request, f'Cliente "{cliente.nome}" atualizado.')
-            return redirect('clientes:lista')
+            return redirect('clientes:detalhe', pk=cliente.pk)
     else:
-        form = ClienteForm(instance=cliente, empresa=empresa)
+        form = ClienteForm(instance=cliente, empresa=empresa, usuario=usuario)
 
     return render(request, 'clientes/form.html', {
         'form': form,
         'titulo': 'Editar Cliente',
         'cliente': cliente,
+    })
+
+
+@login_required
+@requer_perfil('admin', 'gerente', 'vendedor')
+def cliente_mapa(request):
+    empresa = request.user.empresa
+
+    # Filtro por rota
+    rota_id = request.GET.get('rota', '')
+
+    qs = Cliente.objects.filter(
+        empresa=empresa, ativo=True,
+        latitude__isnull=False, longitude__isnull=False,
+    ).select_related('rota')
+
+    if request.user.perfil == 'vendedor':
+        qs = qs.filter(rota_id__in=_rotas_do_vendedor(request.user))
+
+    if rota_id:
+        qs = qs.filter(rota_id=rota_id)
+
+    clientes_json = json.dumps([
+        {
+            'id': c.pk,
+            'nome': c.nome,
+            'telefone': c.telefone,
+            'rota': c.rota.nome if c.rota else '',
+            'endereco': c.endereco,
+            'lat': float(c.latitude),
+            'lng': float(c.longitude),
+        }
+        for c in qs
+    ])
+
+    rotas = Rota.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+    if request.user.perfil == 'vendedor':
+        rotas = rotas.filter(pk__in=_rotas_do_vendedor(request.user))
+
+    return render(request, 'clientes/mapa.html', {
+        'clientes_json': clientes_json,
+        'total': qs.count(),
+        'rotas': rotas,
+        'rota_filtro': rota_id,
     })

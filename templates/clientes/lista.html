@@ -42,9 +42,11 @@
     <option value="inativo" {% if status_filtro == "inativo" %}selected{% endif %}>Inativos</option>
   </select>
   <button type="submit" class="btn btn-outline">Buscar</button>
-  {% if request.user.perfil == 'admin' or request.user.perfil == 'gerente' %}
+  <a href="{% url 'clientes:mapa' %}" class="btn btn-outline">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+    Mapa
+  </a>
   <a href="{% url 'clientes:criar' %}" class="btn btn-primary">+ Novo Cliente</a>
-  {% endif %}
 </form>
 
 <!-- Tabela -->
@@ -59,9 +61,7 @@
           <th>Rota</th>
           <th>Cidade</th>
           <th>Status</th>
-          {% if request.user.perfil != 'vendedor' %}
           <th>Ações</th>
-          {% endif %}
         </tr>
       </thead>
       <tbody>
@@ -79,11 +79,9 @@
             <span class="badge badge-gray">Inativo</span>
             {% endif %}
           </td>
-          {% if request.user.perfil != 'vendedor' %}
           <td>
             <a href="{% url 'clientes:editar' c.pk %}" class="btn btn-sm btn-outline">Editar</a>
           </td>
-          {% endif %}
         </tr>
         {% empty %}
         <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum cliente encontrado.</td></tr>

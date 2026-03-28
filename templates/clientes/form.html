@@ -22,10 +22,18 @@
   .btn:hover { opacity: .85; }
   .btn-primary { background: var(--blue); color: #fff; }
   .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .btn-sm { padding: .35rem .65rem; font-size: .78rem; }
+  .btn-green { background: var(--green); color: #fff; }
   .errorlist { list-style: none; padding: 0; margin: .2rem 0 0; }
   .errorlist li { font-size: .75rem; color: var(--red); }
   .checkbox-group { flex-direction: row; align-items: center; gap: .5rem; }
   .checkbox-group input { width: auto; }
+  .location-row { display: flex; gap: .5rem; align-items: end; }
+  .location-row .form-group { flex: 1; }
+  .geo-status { font-size: .72rem; color: var(--text-muted); margin-top: .3rem; }
+  .geo-status.success { color: var(--green); }
+  .geo-status.error { color: var(--red); }
+  @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
@@ -56,7 +64,7 @@
           {{ form.rota.errors }}
         </div>
         <div class="form-group full">
-          <label for="id_endereco">Endereço</label>
+          <label for="id_endereco">Endereco</label>
           {{ form.endereco }}
           {{ form.endereco.errors }}
         </div>
@@ -75,6 +83,29 @@
           {{ form.uf }}
           {{ form.uf.errors }}
         </div>
+
+        <!-- Localizacao -->
+        <div class="form-group full">
+          <label style="margin-bottom:.3rem">Localizacao (GPS)</label>
+          <div class="location-row">
+            <div class="form-group" style="margin:0">
+              <label for="id_latitude" style="font-size:.7rem">Latitude</label>
+              {{ form.latitude }}
+            </div>
+            <div class="form-group" style="margin:0">
+              <label for="id_longitude" style="font-size:.7rem">Longitude</label>
+              {{ form.longitude }}
+            </div>
+            <button type="button" class="btn btn-sm btn-green" id="btn-gps" onclick="captureGPS()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+              Usar GPS
+            </button>
+          </div>
+          <div class="geo-status" id="geo-status"></div>
+          {{ form.latitude.errors }}
+          {{ form.longitude.errors }}
+        </div>
+
         <div class="form-group checkbox-group">
           {{ form.ativo }}
           <label for="id_ativo">Cliente ativo</label>
@@ -87,4 +118,41 @@
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function captureGPS() {
+  const status = document.getElementById('geo-status');
+  const lat = document.getElementById('id_latitude');
+  const lng = document.getElementById('id_longitude');
+  const btn = document.getElementById('btn-gps');
+
+  if (!navigator.geolocation) {
+    status.textContent = 'Geolocalizacao nao suportada pelo navegador.';
+    status.className = 'geo-status error';
+    return;
+  }
+
+  btn.disabled = true;
+  status.textContent = 'Obtendo localizacao...';
+  status.className = 'geo-status';
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      lat.value = pos.coords.latitude.toFixed(7);
+      lng.value = pos.coords.longitude.toFixed(7);
+      status.textContent = 'Localizacao capturada com sucesso!';
+      status.className = 'geo-status success';
+      btn.disabled = false;
+    },
+    function(err) {
+      status.textContent = 'Erro: ' + err.message;
+      status.className = 'geo-status error';
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+</script>
 {% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Mapa de Clientes{% endblock %}
+{% block nav_clientes %}active{% endblock %}
+{% block page_title %}Mapa de Clientes{% endblock %}
+{% block page_sub %}{{ total }} cliente{{ total|pluralize:"s" }} com localizacao{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  #map { width: 100%; height: 70vh; border-radius: 8px; border: 1px solid var(--card-border); }
+  .map-toolbar {
+    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .map-toolbar select {
+    padding: .45rem .65rem; border: 1px solid var(--card-border); border-radius: 6px;
+    font-size: .825rem; font-family: inherit; background: #fff;
+  }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .85rem; border-radius: 6px; font-size: .8rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .map-empty { text-align: center; color: var(--text-muted); padding: 3rem 1rem; }
+  .map-empty p { margin: .5rem 0; font-size: .9rem; }
+  .leaflet-popup-content { font-family: inherit; font-size: .82rem; }
+  .popup-name { font-weight: 700; font-size: .9rem; margin-bottom: .3rem; }
+  .popup-info { color: #64748b; font-size: .78rem; line-height: 1.5; }
+  .popup-actions { margin-top: .5rem; }
+  .popup-actions a { font-size: .75rem; font-weight: 600; color: #2563eb; text-decoration: none; }
+  .popup-actions a:hover { text-decoration: underline; }
+  @media (max-width: 768px) { #map { height: 55vh; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="map-toolbar">
+  <form method="get" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+    <select name="rota" onchange="this.form.submit()">
+      <option value="">Todas as rotas</option>
+      {% for r in rotas %}
+      <option value="{{ r.id }}" {% if rota_filtro == r.id|stringformat:"d" %}selected{% endif %}>{{ r.nome }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <a href="{% url 'clientes:lista' %}" class="btn btn-outline">Voltar para lista</a>
+</div>
+
+{% if total > 0 %}
+<div id="map"></div>
+{% else %}
+<div class="card map-empty">
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+  <p>Nenhum cliente com localizacao cadastrada.</p>
+  <p style="font-size:.78rem">Cadastre latitude e longitude nos clientes para visualizar no mapa.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if total > 0 %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+  const clientes = {{ clientes_json|safe }};
+  if (!clientes.length) return;
+
+  // Centro no primeiro cliente ou media das coordenadas
+  let latSum = 0, lngSum = 0;
+  clientes.forEach(c => { latSum += c.lat; lngSum += c.lng; });
+  const centerLat = latSum / clientes.length;
+  const centerLng = lngSum / clientes.length;
+
+  const map = L.map('map').setView([centerLat, centerLng], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19,
+  }).addTo(map);
+
+  const bounds = [];
+
+  clientes.forEach(c => {
+    const marker = L.marker([c.lat, c.lng]).addTo(map);
+    bounds.push([c.lat, c.lng]);
+
+    const popup = `
+      <div class="popup-name">${c.nome}</div>
+      <div class="popup-info">
+        ${c.rota ? '<strong>Rota:</strong> ' + c.rota + '<br>' : ''}
+        ${c.telefone ? '<strong>Tel:</strong> ' + c.telefone + '<br>' : ''}
+        ${c.endereco ? c.endereco : ''}
+      </div>
+      <div class="popup-actions">
+        <a href="/clientes/${c.id}/">Ver detalhes</a>
+      </div>
+    `;
+    marker.bindPopup(popup);
+  });
+
+  if (bounds.length > 1) {
+    map.fitBounds(bounds, { padding: [30, 30] });
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

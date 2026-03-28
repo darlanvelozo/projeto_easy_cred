@@ -13,6 +13,8 @@ class Cliente(models.Model):
     bairro = models.CharField(max_length=100, blank=True)
     cidade = models.CharField(max_length=100, blank=True)
     uf = models.CharField(max_length=2, blank=True)
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 

@@ -89,11 +89,19 @@
           {{ form.periodicidade }}
           {{ form.periodicidade.errors }}
         </div>
+        {% if form.data_primeiro_vencimento.is_hidden %}
+          {{ form.data_primeiro_vencimento }}
+          <div class="form-group">
+            <label>1.o Vencimento</label>
+            <span style="font-size:.85rem;color:var(--text-muted);padding:.55rem 0">Calculado automaticamente (amanha)</span>
+          </div>
+        {% else %}
         <div class="form-group">
           <label for="id_data_primeiro_vencimento">1.o Vencimento *</label>
           {{ form.data_primeiro_vencimento }}
           {{ form.data_primeiro_vencimento.errors }}
         </div>
+        {% endif %}
         <div class="form-group full">
           <label for="id_observacao">Observação</label>
           {{ form.observacao }}

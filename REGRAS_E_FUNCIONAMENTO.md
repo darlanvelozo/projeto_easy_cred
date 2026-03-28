@@ -26,6 +26,8 @@
 ### Cliente
 - Pertence a uma empresa e pode estar vinculado a uma rota.
 - Pode ter multiplos emprestimos.
+- Possui campos opcionais de `latitude` e `longitude` para visualizacao em mapa.
+- A localizacao pode ser capturada pelo GPS do celular do vendedor no momento do cadastro.
 
 ### Emprestimo
 - Contrato entre o sistema e um cliente, operado por um vendedor em uma rota.
@@ -146,7 +148,84 @@ Usuario seleciona uma rota no dropdown
 
 ---
 
-### 2.4 Salvar Configuracao da Rota
+### 2.4 Vendedor Cria Emprestimo (formulario simplificado)
+
+```
+Vendedor preenche formulario
+        |
+        v
+[Campos automaticos]
+   - Vendedor: preenchido automaticamente (campo oculto)
+   - Rotas: filtradas — so aparecem as rotas do vendedor
+   - Clientes: filtrados — so clientes das rotas do vendedor
+   - Data 1o vencimento: calculada automaticamente = amanha
+        |
+        v
+[Vendedor escolhe apenas]
+   - Cliente, Rota, Valor, Periodicidade
+   - Taxa e parcelas vem pre-preenchidas da config da rota
+        |
+        v
+[Validacao + criacao]
+   - Mesma cadeia do fluxo 2.1 (calculo, parcelas, caixa)
+```
+
+**Resultado:** vendedor tem interface simplificada, sem precisar definir datas.
+
+---
+
+### 2.5 Mapa de Clientes
+
+```
+Usuario acessa /clientes/mapa/
+        |
+        v
+[Filtro por rota]
+   - Admin/Gerente: veem todas as rotas
+   - Vendedor: veem apenas suas rotas
+        |
+        v
+[Busca clientes com lat/lng]
+   - Filtra: ativo=True, latitude e longitude preenchidos
+   - Serializa em JSON para o frontend
+        |
+        v
+[Leaflet (OpenStreetMap)]
+   - Renderiza mapa com marcadores para cada cliente
+   - Popup: nome, rota, telefone, endereco, link para detalhe
+   - Mapa centralizado e com zoom ajustado aos marcadores
+```
+
+**Resultado:** visualizacao geografica dos clientes da rota.
+
+---
+
+### 2.6 Captura de GPS no Cadastro de Cliente
+
+```
+Vendedor clica "Usar GPS" no formulario de cliente
+        |
+        v
+[navigator.geolocation.getCurrentPosition]
+   - Solicita permissao do navegador
+   - Usa alta precisao (enableHighAccuracy: true)
+        |
+        v
+[Preenche campos]
+   - latitude <- coords.latitude (7 casas decimais)
+   - longitude <- coords.longitude (7 casas decimais)
+        |
+        v
+[Salvo com o cliente]
+   - Os campos lat/lng sao persistidos no banco
+   - Cliente aparece no mapa automaticamente
+```
+
+**Resultado:** localizacao do cliente capturada no campo pelo vendedor.
+
+---
+
+### 2.7 Salvar Configuracao da Rota
 
 ```
 Admin edita campos na pagina de Configuracoes
@@ -166,7 +245,7 @@ Admin edita campos na pagina de Configuracoes
 
 ---
 
-### 2.5 Login e Redirecionamento
+### 2.8 Login e Redirecionamento
 
 ```
 Usuario faz login
@@ -196,10 +275,11 @@ O sistema usa o decorator `@requer_perfil()` em cada view. Superusers sempre pas
 | Listar rotas | Sim | Sim | - |
 | Detalhe da rota | Sim | Sim | - |
 | Listar clientes | Sim | Sim | Sim* |
-| Criar/editar cliente | Sim | Sim | - |
+| Criar/editar cliente | Sim | Sim | Sim* |
 | Detalhe do cliente | Sim | Sim | Sim* |
+| Mapa de clientes | Sim | Sim | Sim* |
 | Listar emprestimos | Sim | Sim | Sim* |
-| Criar emprestimo | Sim | Sim | Sim |
+| Criar emprestimo | Sim | Sim | Sim** |
 | Detalhe emprestimo | Sim | Sim | Sim* |
 | Registrar pagamento | Sim | Sim | Sim |
 | Caixa (saldos) | Sim | Sim | - |
@@ -207,12 +287,17 @@ O sistema usa o decorator `@requer_perfil()` em cada view. Superusers sempre pas
 | Relatorios | Sim | Sim | - |
 | Configuracoes (editar) | Sim | - | - |
 
-**\* Vendedor so ve dados das rotas onde esta vinculado e emprestimos que ele proprio criou.**
+**\* Vendedor so ve/edita dados das rotas onde esta vinculado e emprestimos que ele proprio criou.**
+
+**\*\* Vendedor cria emprestimo com restricoes: nao escolhe data de vencimento (auto-calcula para amanha), so ve clientes e rotas dele.**
 
 ### Isolamento do Vendedor
-- **Clientes:** ve apenas clientes das rotas onde esta vinculado.
+- **Clientes:** ve e edita apenas clientes das rotas onde esta vinculado.
 - **Emprestimos:** ve apenas emprestimos onde ele e o vendedor.
+- **Rotas:** no formulario de emprestimo e cliente, so aparecem as rotas dele.
+- **Mapa:** ve apenas clientes das suas rotas com localizacao cadastrada.
 - **Dashboard:** metricas pessoais (minha carteira, cobranças do dia, meus inadimplentes).
+- **Formulario de emprestimo:** data do 1o vencimento e calculada automaticamente (amanha).
 
 ---
 
@@ -353,11 +438,14 @@ Ou seja: dado qualquer movimentacao, e possivel rastrear ate o cliente, vendedor
 | Bloquear acesso por perfil | Em toda requisicao (decorator `@requer_perfil`) |
 | Filtrar dados por empresa | Em toda view (queryset filtrado por `empresa`) |
 | Filtrar dados do vendedor | Nas views de emprestimo e cliente (ve so os seus) |
+| Calcular data 1o vencimento (vendedor) | Ao submeter formulario de emprestimo como vendedor (= amanha) |
+| Captura GPS do cliente | Ao clicar "Usar GPS" no formulario (navigator.geolocation) |
 
 ### Manual (usuario precisa fazer)
 | Acao | Quem faz |
 |---|---|
-| Cadastrar empresa, rotas, clientes | Admin |
+| Cadastrar empresa e rotas | Admin |
+| Cadastrar clientes | Admin, Gerente ou Vendedor |
 | Definir configuracao da rota | Admin (pagina de Configuracoes) |
 | Vincular vendedores a rotas | Admin (via Django Admin) |
 | Criar emprestimos | Admin, Gerente ou Vendedor |
