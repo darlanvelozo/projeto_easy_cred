@@ -227,7 +227,11 @@
       </div>
       <div class="rota-footer">
         <div>
-          <div style="font-size:.72rem;color:var(--text-muted)">{{ r.rota.configuracao.get_periodicidade_padrao_display }} · {{ r.rota.configuracao.taxa_juros_padrao }}% · {{ r.num_vendedores }} vendedor(es)</div>
+          {% if r.config %}
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ r.config.get_periodicidade_padrao_display }} · {{ r.config.taxa_juros_padrao }}% · {{ r.num_vendedores }} vendedor(es)</div>
+          {% else %}
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ r.num_vendedores }} vendedor(es)</div>
+          {% endif %}
           <div class="rota-carteira">Carteira: R$ {{ r.carteira|floatformat:2 }}</div>
         </div>
         <div style="text-align:right">

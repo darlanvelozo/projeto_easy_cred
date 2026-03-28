@@ -19,6 +19,7 @@ class PagamentoAdmin(admin.ModelAdmin):
     search_fields = ('parcela__emprestimo__cliente__nome', 'recebido_por__username')
     ordering = ('-data_pagamento',)
     readonly_fields = ('data_pagamento',)
+    inlines = [MovimentacaoInline]
 
 
 @admin.register(MovimentacaoFinanceira)

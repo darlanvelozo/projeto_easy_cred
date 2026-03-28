@@ -45,7 +45,7 @@ Sistema SaaS de gestão de crédito rotativo (agiotagem formalizada / crédito p
 - Status do empréstimo: `ativo`, `quitado`, `inadimplente`, `cancelado`.
 
 ### Parcelas
-- Geradas no `post_save` do Empréstimo (a implementar via signal).
+- Geradas automaticamente via signal `post_save` no `Emprestimo` (`emprestimos/signals.py`).
 - Status: `pendente`, `paga`, `atrasada`.
 - Uma parcela pode ter múltiplos pagamentos (pagamentos parciais).
 
@@ -82,16 +82,20 @@ systempaytec/
 
 ### Pendente / Próximos Passos
 - [x] `admin.py` — registrar todos os models no painel Django Admin
-- [ ] Signal `post_save` no `Emprestimo` para gerar parcelas automaticamente
-- [ ] Signal/service para atualizar `CaixaRota` ao registrar `Pagamento`
+- [x] Signal `post_save` no `Emprestimo` para gerar parcelas automaticamente (`emprestimos/signals.py`)
+- [x] Signal `post_save` no `Emprestimo` para registrar saída no caixa (`emprestimos/signals.py`)
+- [x] Signal `post_save` no `Pagamento` para registrar entrada no caixa (`financeiro/signals.py`)
 - [x] Autenticação: login e logout implementados
 - [x] Página de login SystemPay (layout split, toggle senha, mensagens de erro)
 - [x] Redirecionamento por perfil após login (superuser→/admin/, admin/gerente/vendedor→dashboard próprio)
 - [x] Base layout (base.html): sidebar escura, topbar, cards, badges, tabelas — reutilizável em todas as telas
-- [x] Dashboard Admin SaaS: 4 métricas (carteira, caixa, inadimplência, recebido hoje), rotas, últimos empréstimos, clientes inadimplentes
-- [ ] Dashboard Gerente
-- [ ] Dashboard Vendedor
-- [ ] Controle de permissões por perfil (decorators/mixins)
+- [x] Dashboard Admin SaaS: 5 métricas + 4 contadores, rotas, últimos empréstimos, inadimplentes, pagamentos hoje
+- [x] Dashboard Gerente: rotas, vendedores, parcelas próximos 7 dias, métricas
+- [x] Dashboard Vendedor: carteira ativa, cobranças hoje, inadimplentes, métricas pessoais
+- [x] Controle de permissões por perfil (`accounts/decorators.py` — `requer_perfil`)
+- [x] `MovimentacaoInline` no admin do Pagamento
+- [x] Guard `ConfiguracaoRota` com `getattr` + `{% if r.config %}` nos templates
+- [x] `popular_banco` atualizado para funcionar com signals (sem duplicações)
 - [ ] Recuperação de senha
 - [ ] Relatórios: inadimplência, fluxo de caixa, carteira por rota
 

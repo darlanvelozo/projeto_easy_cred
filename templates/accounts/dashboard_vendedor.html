@@ -1,1 +1,194 @@
-<!DOCTYPE html><html><body><h1>dashboard_vendedor</h1><a href="/logout/">Sair</a></body></html>
+{% extends "base.html" %}
+{% block title %}Vendedor{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}Meu Painel{% endblock %}
+{% block page_sub %}Olá, {{ request.user.first_name|default:request.user.username }}! Estas são suas atividades de hoje.{% endblock %}
+
+{% block extra_head %}
+<style>
+  .metric-card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
+    padding: 1.25rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+    box-shadow: var(--shadow-sm); transition: box-shadow .2s, transform .15s;
+  }
+  .metric-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .metric-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .metric-value { font-size: 1.6rem; font-weight: 800; letter-spacing: -.03em; margin-top: .25rem; line-height: 1; }
+  .metric-sub { font-size: .78rem; color: var(--text-muted); margin-top: .4rem; }
+  .metric-sub b { color: var(--text-secondary); font-weight: 600; }
+  .metric-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .metric-icon svg { width: 22px; height: 22px; }
+  .icon-blue   { background: #dbeafe; color: var(--blue); }
+  .icon-green  { background: #dcfce7; color: var(--green); }
+  .icon-red    { background: #fee2e2; color: var(--red); }
+  .icon-yellow { background: #fef9c3; color: var(--yellow); }
+  .icon-teal   { background: #e0f2fe; color: var(--teal); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+
+  .parcela-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .85rem 1.25rem; border-bottom: 1px solid #f1f5f9;
+  }
+  .parcela-item:last-child { border-bottom: none; }
+  .parcela-nome { font-size: .875rem; font-weight: 600; }
+  .parcela-det  { font-size: .75rem; color: var(--text-muted); margin-top: .1rem; }
+  .parcela-valor { font-size: .9rem; font-weight: 700; }
+  .parcela-btn {
+    margin-top: .35rem; display: inline-block; padding: .25rem .6rem;
+    font-size: .7rem; font-weight: 600; border-radius: 6px; text-decoration: none;
+    background: var(--green); color: #fff; transition: opacity .15s;
+  }
+  .parcela-btn:hover { opacity: .85; }
+
+  .inadim-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .75rem 1.25rem; border-bottom: 1px solid #f8fafc;
+  }
+  .inadim-item:last-child { border-bottom: none; }
+  .inadim-nome { font-size: .875rem; font-weight: 600; }
+  .inadim-sub  { font-size: .75rem; color: var(--text-muted); margin-top: .1rem; }
+  .inadim-right { text-align: right; }
+  .inadim-valor { font-size: .9rem; font-weight: 700; color: var(--red); }
+  .inadim-dias  { font-size: .72rem; color: var(--text-muted); margin-top: .1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Métricas -->
+<div class="grid-4" style="margin-bottom:1.5rem">
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Minha Carteira</div>
+      <div class="metric-value">R$&nbsp;{{ valor_carteira|floatformat:2 }}</div>
+      <div class="metric-sub"><b>{{ total_emprestimos_ativos }}</b> empréstimos ativos</div>
+    </div>
+    <div class="metric-icon icon-blue"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+  </div>
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Parcelas Hoje</div>
+      <div class="metric-value" style="color:var(--yellow)">{{ total_parcelas_hoje }}</div>
+      <div class="metric-sub">R$&nbsp;{{ valor_parcelas_hoje|floatformat:2 }} a cobrar</div>
+    </div>
+    <div class="metric-icon icon-yellow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg></div>
+  </div>
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Recebido Hoje</div>
+      <div class="metric-value" style="color:var(--green)">R$&nbsp;{{ recebido_hoje|floatformat:2 }}</div>
+      <div class="metric-sub">{% now "d/m/Y" %}</div>
+    </div>
+    <div class="metric-icon icon-green"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>
+  </div>
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Inadimplentes</div>
+      <div class="metric-value" style="color:var(--red)">{{ total_inadimplentes }}</div>
+      <div class="metric-sub">clientes em atraso</div>
+    </div>
+    <div class="metric-icon icon-red"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
+  </div>
+</div>
+
+<!-- Parcelas de hoje + Inadimplentes -->
+<div class="two-col" style="margin-bottom:1.25rem">
+
+  <!-- Parcelas de hoje -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Cobranças de hoje</div>
+        <div class="card-sub">Parcelas com vencimento em {% now "d/m/Y" %}</div>
+      </div>
+      {% if total_parcelas_hoje > 0 %}
+      <span class="badge badge-yellow">{{ total_parcelas_hoje }}</span>
+      {% endif %}
+    </div>
+    {% for p in parcelas_hoje %}
+    <div class="parcela-item">
+      <div>
+        <div class="parcela-nome">{{ p.emprestimo.cliente.nome }}</div>
+        <div class="parcela-det">{{ p.emprestimo.rota.nome }} · Parcela {{ p.numero }}/{{ p.emprestimo.num_parcelas }}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="parcela-valor">R$ {{ p.valor|floatformat:2 }}</div>
+        <a href="#" class="parcela-btn">Registrar Pagamento</a>
+      </div>
+    </div>
+    {% empty %}
+    <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.875rem">
+      Nenhuma parcela vence hoje.
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Inadimplentes -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Clientes inadimplentes</div>
+        <div class="card-sub">Parcelas em atraso nas suas rotas</div>
+      </div>
+      {% if total_inadimplentes > 0 %}
+      <span class="badge badge-red">{{ total_inadimplentes }}</span>
+      {% endif %}
+    </div>
+    {% for c in inadimplentes_resumo %}
+    <div class="inadim-item">
+      <div>
+        <div class="inadim-nome">{{ c.nome }}</div>
+        <div class="inadim-sub">{{ c.rota }}{% if c.telefone %} · {{ c.telefone }}{% endif %}</div>
+      </div>
+      <div class="inadim-right">
+        <div class="inadim-valor">R$ {{ c.valor_atrasado|floatformat:2 }}</div>
+        <div class="inadim-dias">{{ c.qtd_atrasadas }} parc. · {{ c.dias_atraso }}d atraso</div>
+      </div>
+    </div>
+    {% empty %}
+    <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.875rem">
+      Nenhum cliente inadimplente.
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Carteira ativa -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Minha carteira ativa</div>
+      <div class="card-sub">Empréstimos em andamento</div>
+    </div>
+    <span style="font-size:.85rem;font-weight:700;color:var(--blue)">{{ total_emprestimos_ativos }} emprést.</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Rota</th>
+          <th>Valor parcela</th>
+          <th>Restantes</th>
+          <th>Próx. vencimento</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in minha_carteira %}
+        <tr>
+          <td style="font-weight:500">{{ item.emprestimo.cliente.nome }}</td>
+          <td class="td-muted">{{ item.emprestimo.rota.nome }}</td>
+          <td style="font-weight:600">R$ {{ item.valor_parcela|floatformat:2 }}</td>
+          <td style="text-align:center">{{ item.restantes }}/{{ item.emprestimo.num_parcelas }}</td>
+          <td class="td-muted">
+            {% if item.proximo_vencimento %}{{ item.proximo_vencimento|date:"d/m/Y" }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum empréstimo ativo.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

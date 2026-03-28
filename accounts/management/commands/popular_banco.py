@@ -112,29 +112,18 @@ EMPRESTIMOS_POR_CLIENTE = {
 }
 
 
-def _delta(periodicidade, n):
-    """Retorna timedelta de n períodos conforme periodicidade."""
-    if periodicidade == "diario":    return timedelta(days=n)
-    if periodicidade == "semanal":   return timedelta(weeks=n)
-    if periodicidade == "quinzenal": return timedelta(days=15 * n)
-    return timedelta(days=30 * n)  # mensal
-
-
-def _movimentar(caixa, tipo, origem, valor, usuario, referencia_pgto=None, descricao=""):
+def _movimentar_aporte(caixa, valor, usuario, descricao=""):
+    """Registra aporte manual (sem signal) — usado apenas para capital inicial."""
     saldo_ant = caixa.saldo
-    if tipo == "entrada":
-        caixa.saldo += Decimal(str(valor))
-    else:
-        caixa.saldo -= Decimal(str(valor))
+    caixa.saldo += Decimal(str(valor))
     caixa.save()
     MovimentacaoFinanceira.objects.create(
         caixa=caixa,
-        tipo=tipo,
-        origem=origem,
+        tipo="entrada",
+        origem="aporte",
         valor=Decimal(str(valor)),
         saldo_anterior=saldo_ant,
         saldo_posterior=caixa.saldo,
-        referencia_pagamento=referencia_pgto,
         registrado_por=usuario,
         descricao=descricao,
     )
@@ -218,8 +207,8 @@ class Command(BaseCommand):
                 # aporte inicial de capital
                 gerente = Usuario.objects.filter(empresa=empresa, perfil="gerente").first()
                 if caixa.saldo == 0:
-                    _movimentar(caixa, "entrada", "aporte", 10000, gerente,
-                                descricao="Capital inicial da rota")
+                    _movimentar_aporte(caixa, 10000, gerente,
+                                       descricao="Capital inicial da rota")
                     self.stdout.write(f"    → Caixa aberto com R$ 10.000,00")
 
                 # vincular vendedores
@@ -245,15 +234,14 @@ class Command(BaseCommand):
                     clientes_map[cliente.nome] = cliente
         self.stdout.write(f"  → {len(clientes_map)} clientes criados")
 
-        # ── 5. Empréstimos + Parcelas ─────────────────────────────────────────
-        self.stdout.write("\n[4/6] Criando empréstimos e parcelas...")
+        # ── 5. Empréstimos (signals geram parcelas + movimentação) ────────────
+        self.stdout.write("\n[4/6] Criando empréstimos...")
         total_emp = 0
 
         for emp_data in EMPRESAS:
             empresa = Empresa.objects.get(cnpj=emp_data["cnpj"])
             for r_data in ROTAS[empresa.nome]:
                 rota = rotas_map[r_data["nome"]]
-                caixa = CaixaRota.objects.get(rota=rota)
                 config = ConfiguracaoRota.objects.get(rota=rota)
                 vendedor = VendedorRota.objects.filter(rota=rota).first().vendedor
 
@@ -262,7 +250,6 @@ class Command(BaseCommand):
                     emprestimos_def = EMPRESTIMOS_POR_CLIENTE.get(cliente.nome, [])
 
                     for idx, (valor, status, pagas, dias_atraso) in enumerate(emprestimos_def):
-                        # data de criação: empréstimos mais antigos para quitados
                         if status == "quitado":
                             criado_ha = hoje - timedelta(days=90 + idx * 30)
                         elif status == "inadimplente":
@@ -270,8 +257,12 @@ class Command(BaseCommand):
                         else:
                             criado_ha = hoje - timedelta(days=30 + idx * 15)
 
-                        primeiro_venc = criado_ha + _delta(config.periodicidade_padrao, 1)
+                        primeiro_venc = criado_ha + timedelta(days={
+                            "diario": 1, "semanal": 7, "quinzenal": 15, "mensal": 30,
+                        }.get(config.periodicidade_padrao, 30))
 
+                        # save() calcula valor_total/valor_parcela
+                        # signals geram parcelas (pendente) + saída no caixa
                         emp = Emprestimo(
                             cliente=cliente,
                             rota=rota,
@@ -283,56 +274,45 @@ class Command(BaseCommand):
                             data_primeiro_vencimento=primeiro_venc,
                             status=status,
                         )
-                        emp.save()  # dispara cálculo de valor_total e valor_parcela
+                        emp.save()
 
-                        # movimentação de saída no caixa (concessão)
-                        _movimentar(caixa, "saida", "emprestimo", emp.valor_principal, vendedor,
-                                    descricao=f"Empréstimo #{emp.pk} — {cliente.nome}")
-
-                        # gerar parcelas
-                        parcelas_criadas = []
-                        for i in range(1, config.num_parcelas_padrao + 1):
-                            venc = primeiro_venc + _delta(config.periodicidade_padrao, i - 1)
+                        # Atualizar status das parcelas geradas pelo signal
+                        parcelas = list(emp.parcelas.order_by("numero"))
+                        for parcela in parcelas:
+                            i = parcela.numero
+                            venc = parcela.vencimento
 
                             if status == "quitado":
-                                p_status = "paga"
+                                novo_status = "paga"
                             elif i <= pagas:
-                                p_status = "paga"
+                                novo_status = "paga"
                             elif dias_atraso > 0 and i == pagas + 1:
-                                p_status = "atrasada"
+                                novo_status = "atrasada"
                             elif venc < hoje:
-                                p_status = "atrasada" if status == "inadimplente" else "pendente"
+                                novo_status = "atrasada" if status == "inadimplente" else "pendente"
                             else:
-                                p_status = "pendente"
+                                novo_status = "pendente"
 
-                            pago_em = None
-                            if p_status == "paga":
-                                pago_em = timezone.make_aware(
-                                    timezone.datetime.combine(venc + timedelta(days=1), timezone.datetime.min.time())
-                                )
+                            if novo_status != "pendente":
+                                parcela.status = novo_status
+                                if novo_status == "paga":
+                                    parcela.pago_em = timezone.make_aware(
+                                        timezone.datetime.combine(
+                                            venc + timedelta(days=1),
+                                            timezone.datetime.min.time(),
+                                        )
+                                    )
+                                parcela.save(update_fields=["status", "pago_em"])
 
-                            parcela = Parcela.objects.create(
-                                emprestimo=emp,
-                                numero=i,
-                                valor=emp.valor_parcela,
-                                vencimento=venc,
-                                status=p_status,
-                                pago_em=pago_em,
-                            )
-                            parcelas_criadas.append(parcela)
-
-                        # ── 6. Pagamentos para parcelas pagas ─────────────────
-                        for parcela in parcelas_criadas:
+                        # ── 6. Pagamentos (signal registra entrada no caixa) ──
+                        for parcela in parcelas:
                             if parcela.status == "paga":
-                                pgto = Pagamento.objects.create(
+                                Pagamento.objects.create(
                                     parcela=parcela,
                                     recebido_por=vendedor,
                                     valor=parcela.valor,
                                     forma="dinheiro",
                                 )
-                                _movimentar(caixa, "entrada", "pagamento", parcela.valor, vendedor,
-                                            referencia_pgto=pgto,
-                                            descricao=f"Parcela {parcela.numero}/{emp.num_parcelas} — {cliente.nome}")
 
                         total_emp += 1
 

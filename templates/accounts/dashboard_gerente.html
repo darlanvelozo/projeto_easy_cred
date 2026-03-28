@@ -1,1 +1,187 @@
-<!DOCTYPE html><html><body><h1>dashboard_gerente</h1><a href="/logout/">Sair</a></body></html>
+{% extends "base.html" %}
+{% block title %}Gerente{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}Dashboard — Gerente{% endblock %}
+{% block page_sub %}Gestão de rotas, vendedores e parcelas da {{ request.user.empresa.nome }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .metric-card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
+    padding: 1.25rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+    box-shadow: var(--shadow-sm); transition: box-shadow .2s, transform .15s;
+  }
+  .metric-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .metric-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .metric-value { font-size: 1.6rem; font-weight: 800; letter-spacing: -.03em; margin-top: .25rem; line-height: 1; }
+  .metric-sub { font-size: .78rem; color: var(--text-muted); margin-top: .4rem; }
+  .metric-sub b { color: var(--text-secondary); font-weight: 600; }
+  .metric-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .metric-icon svg { width: 22px; height: 22px; }
+  .icon-blue   { background: #dbeafe; color: var(--blue); }
+  .icon-green  { background: #dcfce7; color: var(--green); }
+  .icon-red    { background: #fee2e2; color: var(--red); }
+  .icon-purple { background: #ede9fe; color: var(--purple); }
+  .icon-teal   { background: #e0f2fe; color: var(--teal); }
+  .icon-yellow { background: #fef9c3; color: var(--yellow); }
+
+  .rota-card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
+    padding: 1.1rem 1.25rem; transition: box-shadow .2s;
+  }
+  .rota-card:hover { box-shadow: var(--shadow); }
+  .rota-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .6rem; }
+  .rota-nome { font-size: .9rem; font-weight: 700; }
+  .rota-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-bottom: .75rem; }
+  .rota-stat { text-align: center; padding: .4rem; background: var(--page-bg); border-radius: 6px; }
+  .rota-stat-val { font-size: 1.1rem; font-weight: 800; }
+  .rota-stat-val.red { color: var(--red); }
+  .rota-stat-lbl { font-size: .65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .rota-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: .7rem; border-top: 1px solid var(--card-border); font-size: .78rem; color: var(--text-muted);
+  }
+  .rota-saldo { font-weight: 700; color: var(--green); font-size: .88rem; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Métricas -->
+<div class="grid-4" style="margin-bottom:1.5rem">
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Rotas Ativas</div>
+      <div class="metric-value">{{ total_rotas_ativas }}</div>
+      <div class="metric-sub">da empresa</div>
+    </div>
+    <div class="metric-icon icon-blue"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>
+  </div>
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Vendedores</div>
+      <div class="metric-value">{{ total_vendedores }}</div>
+      <div class="metric-sub">ativos</div>
+    </div>
+    <div class="metric-icon icon-purple"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+  </div>
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Clientes Ativos</div>
+      <div class="metric-value">{{ total_clientes }}</div>
+      <div class="metric-sub"><b>{{ total_emprestimos_ativos }}</b> empréstimos</div>
+    </div>
+    <div class="metric-icon icon-green"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg></div>
+  </div>
+  <div class="metric-card">
+    <div>
+      <div class="metric-label">Inadimplentes</div>
+      <div class="metric-value" style="color:var(--red)">{{ total_inadimplentes_clientes }}</div>
+      <div class="metric-sub">clientes em atraso</div>
+    </div>
+    <div class="metric-icon icon-red"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
+  </div>
+</div>
+
+<!-- Rotas -->
+<div style="margin-bottom:1.5rem">
+  <h2 style="font-size:.9rem;font-weight:700;margin-bottom:.85rem">Rotas</h2>
+  <div class="grid-{% if rotas_resumo|length > 3 %}4{% elif rotas_resumo|length == 3 %}3{% else %}2{% endif %}">
+    {% for r in rotas_resumo %}
+    <div class="rota-card">
+      <div class="rota-header">
+        <span class="rota-nome">{{ r.rota.nome }}</span>
+        <span class="badge badge-green">Ativa</span>
+      </div>
+      <div class="rota-stats">
+        <div class="rota-stat">
+          <div class="rota-stat-val">{{ r.clientes }}</div>
+          <div class="rota-stat-lbl">Clientes</div>
+        </div>
+        <div class="rota-stat">
+          <div class="rota-stat-val">{{ r.ativos }}</div>
+          <div class="rota-stat-lbl">Emprést.</div>
+        </div>
+        <div class="rota-stat">
+          <div class="rota-stat-val red">{{ r.inadimplentes }}</div>
+          <div class="rota-stat-lbl">Inadimp.</div>
+        </div>
+      </div>
+      <div class="rota-footer">
+        <div>
+          {% if r.config %}
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ r.config.get_periodicidade_padrao_display }} · {{ r.config.taxa_juros_padrao }}% · {{ r.num_vendedores }} vend.</div>
+          {% else %}
+          <div style="font-size:.72rem;color:var(--text-muted)">{{ r.num_vendedores }} vend.</div>
+          {% endif %}
+        </div>
+        <span class="rota-saldo">R$ {{ r.saldo|floatformat:2 }}</span>
+      </div>
+    </div>
+    {% empty %}
+    <p style="color:var(--text-muted);font-size:.875rem">Nenhuma rota.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Vendedores + Parcelas -->
+<div class="two-col">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Vendedores</div>
+        <div class="card-sub">Desempenho de hoje</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Vendedor</th><th>Rotas</th><th>Emprést. ativos</th><th>Coletado hoje</th></tr>
+        </thead>
+        <tbody>
+          {% for v in vendedores_resumo %}
+          <tr>
+            <td style="font-weight:500">{{ v.vendedor.get_full_name|default:v.vendedor.username }}</td>
+            <td class="td-muted">{{ v.rotas }}</td>
+            <td style="text-align:center">{{ v.emp_ativos }}</td>
+            <td style="font-weight:600;color:var(--green)">R$ {{ v.coletado_hoje|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem">Nenhum vendedor.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Parcelas nos próximos 7 dias</div>
+        <div class="card-sub">Pendentes de cobrança</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Cliente</th><th>Rota</th><th>Vencimento</th><th>Valor</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for p in proximas_parcelas %}
+          <tr>
+            <td style="font-weight:500">{{ p.emprestimo.cliente.nome }}</td>
+            <td class="td-muted">{{ p.emprestimo.rota.nome }}</td>
+            <td class="td-muted">{{ p.vencimento|date:"d/m/Y" }}</td>
+            <td style="font-weight:600">R$ {{ p.valor|floatformat:2 }}</td>
+            <td><span class="badge badge-yellow">Pendente</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:1.5rem">Nenhuma parcela nos próximos 7 dias.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
