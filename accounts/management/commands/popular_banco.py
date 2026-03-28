@@ -34,10 +34,10 @@ EMPRESA = {
 # (username, nome, sobrenome, perfil, senha)
 
 USUARIOS = [
-    ("admin1",     "Darlan",   "Velozo",     "admin",    "admin123"),
-    ("gerente1",   "Marcos",   "Oliveira",   "gerente",  "gerente123"),
-    ("vendedor1",  "Raimundo", "Silva",      "vendedor", "vend123"),
-    ("vendedor2",  "Francisco","Santos",     "vendedor", "vend123"),
+    ("darlan",     "Darlan",    "Velozo",      "admin",    "darlan123"),
+    ("marcos",     "Marcos",    "Oliveira",    "gerente",  "marcos123"),
+    ("raimundo",   "Raimundo",  "Silva",       "vendedor", "raimundo123"),
+    ("chico",      "Francisco", "Santos",      "vendedor", "chico123"),
 ]
 
 # ─── Rotas (2 cidades do Piaui) ─────────────────────────────────────────────
@@ -50,7 +50,7 @@ ROTAS = [
         "parcelas": 20,
         "limite": Decimal("3000.00"),
         "aporte": Decimal("15000.00"),
-        "vendedores": ["vendedor1"],
+        "vendedores": ["raimundo"],
     },
     {
         "nome": "Rota Picos",
@@ -59,7 +59,7 @@ ROTAS = [
         "parcelas": 24,
         "limite": Decimal("2000.00"),
         "aporte": Decimal("10000.00"),
-        "vendedores": ["vendedor2"],
+        "vendedores": ["chico"],
     },
 ]
 
@@ -220,7 +220,7 @@ class Command(BaseCommand):
         # ── 3. Rotas ─────────────────────────────────────────────────────────
         self.stdout.write("\n[3/6] Criando rotas (Teresina e Picos)...")
         rotas_map = {}
-        gerente = usuarios_map["gerente1"]
+        gerente = usuarios_map["marcos"]
 
         for r in ROTAS:
             rota, _ = Rota.objects.get_or_create(nome=r["nome"], empresa=empresa)
@@ -400,13 +400,13 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         self.stdout.write("  CREDENCIAIS DE ACESSO")
-        self.stdout.write("  " + "-" * 50)
-        self.stdout.write(f"  {'Usuario':<16} {'Perfil':<14} {'Senha':<12}")
-        self.stdout.write("  " + "-" * 50)
-        self.stdout.write(f"  {'admin':<16} {'Superuser':<14} {'admin123':<12}")
-        self.stdout.write(f"  {'admin1':<16} {'Admin SaaS':<14} {'admin123':<12}")
-        self.stdout.write(f"  {'gerente1':<16} {'Gerente':<14} {'gerente123':<12}")
-        self.stdout.write(f"  {'vendedor1':<16} {'Vendedor (THE)':<14} {'vend123':<12}")
-        self.stdout.write(f"  {'vendedor2':<16} {'Vendedor (PIC)':<14} {'vend123':<12}")
-        self.stdout.write("  " + "-" * 50)
+        self.stdout.write("  " + "-" * 54)
+        self.stdout.write(f"  {'Usuario':<16} {'Perfil':<18} {'Senha':<14}")
+        self.stdout.write("  " + "-" * 54)
+        self.stdout.write(f"  {'admin':<16} {'Superuser':<18} {'admin123':<14}")
+        self.stdout.write(f"  {'darlan':<16} {'Admin SaaS':<18} {'darlan123':<14}")
+        self.stdout.write(f"  {'marcos':<16} {'Gerente':<18} {'marcos123':<14}")
+        self.stdout.write(f"  {'raimundo':<16} {'Vendedor (THE)':<18} {'raimundo123':<14}")
+        self.stdout.write(f"  {'chico':<16} {'Vendedor (PIC)':<18} {'chico123':<14}")
+        self.stdout.write("  " + "-" * 54)
         self.stdout.write("=" * 58 + "\n")
