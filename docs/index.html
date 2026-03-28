@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EasyCred — Documentação do Sistema</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --blue-dark: #1e40af;
+      --teal: #0ea5e9;
+      --green: #10b981;
+      --green-light: #dcfce7;
+      --yellow: #f59e0b;
+      --yellow-light: #fef9c3;
+      --red: #ef4444;
+      --red-light: #fee2e2;
+      --purple: #8b5cf6;
+      --purple-light: #ede9fe;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-400: #94a3b8;
+      --gray-500: #64748b;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-800: #1e293b;
+      --gray-900: #0f172a;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--gray-800);
+      line-height: 1.7;
+      background: #fff;
+    }
+
+    /* ── Hero ──────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, var(--gray-900) 0%, var(--blue-dark) 50%, var(--teal) 100%);
+      color: #fff;
+      padding: 5rem 2rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 50%, rgba(14,165,233,.15) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 80%, rgba(37,99,235,.1) 0%, transparent 40%);
+    }
+
+    .hero > * { position: relative; }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      padding: .35rem 1rem;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: -.03em;
+      margin-bottom: .75rem;
+    }
+
+    .hero h1 span { color: var(--teal); }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: rgba(255,255,255,.75);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ── Nav ───────────────────────────────── */
+    .nav-bar {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      gap: .25rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .nav-inner::-webkit-scrollbar { display: none; }
+
+    .nav-link {
+      padding: .85rem 1rem;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-decoration: none;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all .15s;
+    }
+
+    .nav-link:hover { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* ── Container ─────────────────────────── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* ── Sections ──────────────────────────── */
+    section {
+      padding: 4rem 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    section:last-child { border-bottom: none; }
+
+    .section-label {
+      display: inline-block;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--blue);
+      background: var(--blue-light);
+      padding: .25rem .75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: .5rem;
+      letter-spacing: -.02em;
+    }
+
+    .section-desc {
+      font-size: 1rem;
+      color: var(--gray-500);
+      max-width: 700px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── Cards Grid ────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 1.75rem;
+      transition: box-shadow .2s, transform .2s;
+    }
+
+    .card:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,.08);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      font-size: 1.4rem;
+    }
+
+    .card-icon.blue { background: var(--blue-light); }
+    .card-icon.green { background: var(--green-light); }
+    .card-icon.yellow { background: var(--yellow-light); }
+    .card-icon.red { background: var(--red-light); }
+    .card-icon.purple { background: var(--purple-light); }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: .5rem;
+    }
+
+    .card p {
+      font-size: .875rem;
+      color: var(--gray-600);
+      line-height: 1.6;
+    }
+
+    /* ── Roles ─────────────────────────────── */
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .role-card {
+      border-radius: 16px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .role-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      opacity: .1;
+      transform: translate(30%, -30%);
+    }
+
+    .role-admin { background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px solid #bfdbfe; }
+    .role-admin::before { background: var(--blue); }
+    .role-gerente { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #bbf7d0; }
+    .role-gerente::before { background: var(--green); }
+    .role-vendedor { background: linear-gradient(135deg, #fefce8, #fef9c3); border: 1px solid #fde68a; }
+    .role-vendedor::before { background: var(--yellow); }
+
+    .role-card h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: .25rem;
+    }
+
+    .role-admin h3 { color: var(--blue-dark); }
+    .role-gerente h3 { color: #166534; }
+    .role-vendedor h3 { color: #92400e; }
+
+    .role-subtitle {
+      font-size: .82rem;
+      color: var(--gray-500);
+      margin-bottom: 1.25rem;
+    }
+
+    .role-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .role-list li {
+      font-size: .85rem;
+      color: var(--gray-700);
+      padding-left: 1.5rem;
+      position: relative;
+    }
+
+    .role-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      font-weight: 700;
+      font-size: .75rem;
+    }
+
+    .role-admin .role-list li::before { color: var(--blue); }
+    .role-gerente .role-list li::before { color: var(--green); }
+    .role-vendedor .role-list li::before { color: var(--yellow); }
+
+    /* ── Flow / Steps ──────────────────────── */
+    .flow-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    .flow-block {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .flow-number {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      background: var(--blue);
+      flex-shrink: 0;
+    }
+
+    .flow-content h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: .35rem;
+    }
+
+    .flow-content p {
+      font-size: .9rem;
+      color: var(--gray-600);
+      line-height: 1.7;
+    }
+
+    .flow-detail {
+      margin-top: .75rem;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-size: .85rem;
+      color: var(--gray-600);
+    }
+
+    .flow-detail strong { color: var(--gray-800); }
+
+    /* ── Table ─────────────────────────────── */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: var(--gray-50);
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--gray-500);
+      padding: .85rem 1.25rem;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    td {
+      padding: .85rem 1.25rem;
+      font-size: .875rem;
+      color: var(--gray-700);
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--gray-50); }
+
+    .check { color: var(--green); font-weight: 700; }
+    .cross { color: var(--gray-300); }
+
+    /* ── Highlight boxes ───────────────────── */
+    .highlight-box {
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+      font-size: .9rem;
+    }
+
+    .highlight-box.info {
+      background: var(--blue-light);
+      border-left: 4px solid var(--blue);
+      color: var(--blue-dark);
+    }
+
+    .highlight-box.warning {
+      background: var(--yellow-light);
+      border-left: 4px solid var(--yellow);
+      color: #92400e;
+    }
+
+    .highlight-box.success {
+      background: var(--green-light);
+      border-left: 4px solid var(--green);
+      color: #166534;
+    }
+
+    .highlight-box strong { display: block; margin-bottom: .25rem; font-size: .95rem; }
+
+    /* ── Two columns ───────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* ── Formula ───────────────────────────── */
+    .formula {
+      background: var(--gray-900);
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      font-family: 'Courier New', monospace;
+      font-size: .95rem;
+      line-height: 1.8;
+      margin: 1rem 0;
+    }
+
+    .formula .highlight { color: var(--teal); font-weight: 700; }
+    .formula .comment { color: var(--gray-400); font-style: italic; }
+
+    /* ── Lifecycle ──────────────────────────── */
+    .lifecycle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+      padding: 2rem 0;
+    }
+
+    .lifecycle-step {
+      padding: .65rem 1.25rem;
+      border-radius: 10px;
+      font-size: .85rem;
+      font-weight: 700;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .lifecycle-arrow {
+      font-size: 1.25rem;
+      color: var(--gray-400);
+    }
+
+    .lc-active { background: var(--green-light); color: #166534; border: 2px solid #86efac; }
+    .lc-paid { background: var(--blue-light); color: var(--blue-dark); border: 2px solid #93c5fd; }
+    .lc-late { background: var(--red-light); color: #dc2626; border: 2px solid #fca5a5; }
+    .lc-cancelled { background: var(--gray-100); color: var(--gray-500); border: 2px solid var(--gray-300); }
+
+    /* ── Stats row ─────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--gray-900);
+      letter-spacing: -.02em;
+    }
+
+    .stat-label {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-top: .15rem;
+    }
+
+    /* ── Footer ────────────────────────────── */
+    .footer {
+      background: var(--gray-900);
+      color: var(--gray-400);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .footer-brand {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: .5rem;
+    }
+
+    .footer-brand span { color: var(--teal); }
+
+    .footer p { font-size: .85rem; }
+
+    /* ── Responsive ────────────────────────── */
+    @media (max-width: 768px) {
+      .roles-grid { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .flow-block { grid-template-columns: 1fr; }
+      .flow-number { width: 42px; height: 42px; font-size: 1rem; border-radius: 10px; }
+      section { padding: 2.5rem 0; }
+      .hero { padding: 3rem 1.5rem 2.5rem; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-row { grid-template-columns: 1fr; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .lifecycle { flex-direction: column; }
+      .lifecycle-arrow { transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════ HERO ════════════════════════════════════════ -->
+<header class="hero">
+  <div class="hero-badge">Documentacao do Sistema</div>
+  <h1>Easy<span>Cred</span></h1>
+  <p>Sistema completo de gestao de credito popular com rotas de cobranca, controle financeiro e operacao de campo.</p>
+</header>
+
+<!-- ════════════════════════════════════════ NAV ═════════════════════════════════════════ -->
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <a href="#visao-geral" class="nav-link">Visao Geral</a>
+    <a href="#perfis" class="nav-link">Perfis</a>
+    <a href="#emprestimo" class="nav-link">Emprestimos</a>
+    <a href="#pagamentos" class="nav-link">Pagamentos</a>
+    <a href="#caixa" class="nav-link">Caixa</a>
+    <a href="#regras" class="nav-link">Regras</a>
+    <a href="#seguranca" class="nav-link">Seguranca</a>
+    <a href="#configuracoes" class="nav-link">Configuracoes</a>
+    <a href="#permissoes" class="nav-link">Permissoes</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════ VISAO GERAL ═════════════════════════════════ -->
+<section id="visao-geral">
+  <div class="container">
+    <span class="section-label">Visao Geral</span>
+    <h2 class="section-title">O que e o EasyCred?</h2>
+    <p class="section-desc">
+      Uma plataforma que permite empresas de credito popular gerenciar toda sua operacao: desde a concessao
+      de emprestimos em campo ate o controle financeiro completo de cada rota de cobranca.
+    </p>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Perfis de usuario</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">100%</div>
+        <div class="stat-label">Rastreavel</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">GPS</div>
+        <div class="stat-label">Mapa de clientes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">24/7</div>
+        <div class="stat-label">Acesso pelo celular</div>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon blue">&#128176;</div>
+        <h3>Gestao de Emprestimos</h3>
+        <p>Criacao, acompanhamento e quitacao automatica de emprestimos com juros simples, parcelas calculadas e controle total do ciclo de vida.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon green">&#128178;</div>
+        <h3>Controle de Caixa</h3>
+        <p>Saldo por rota, historico completo de movimentacoes, aportes e retiradas — tudo rastreado com saldo anterior e posterior.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon yellow">&#128205;</div>
+        <h3>Rotas e Cobranca</h3>
+        <p>Vendedores organizados por rotas geograficas. Cada rota tem seus clientes, configuracao de juros e caixa proprio.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon purple">&#128202;</div>
+        <h3>Relatorios Gerenciais</h3>
+        <p>Inadimplencia, recebimentos mensais, carteira por rota, desempenho de vendedores e top inadimplentes.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon red">&#128274;</div>
+        <h3>Seguranca e Isolamento</h3>
+        <p>Cada empresa ve apenas seus dados. Vendedores so acessam suas rotas. Controle de permissao por perfil em cada tela.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon green">&#128241;</div>
+        <h3>Operacao Mobile</h3>
+        <p>Interface responsiva para uso em campo. Cadastro de clientes com GPS, mapa interativo e registro rapido de pagamentos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ PERFIS ══════════════════════════════════════ -->
+<section id="perfis">
+  <div class="container">
+    <span class="section-label">Perfis de Usuario</span>
+    <h2 class="section-title">Tres visoes do sistema</h2>
+    <p class="section-desc">
+      Cada perfil ve o sistema de forma diferente, com acesso apenas ao que precisa para desempenhar seu papel.
+    </p>
+
+    <div class="roles-grid">
+      <div class="role-card role-admin">
+        <h3>Administrador</h3>
+        <p class="role-subtitle">Dono ou gestor principal da empresa</p>
+        <ul class="role-list">
+          <li>Visao completa de toda a operacao</li>
+          <li>Dashboard com indicadores financeiros</li>
+          <li>Criar e editar rotas</li>
+          <li>Configurar taxas, limites, multas e juros</li>
+          <li>Cancelar emprestimos com motivo</li>
+          <li>Realizar aportes e retiradas no caixa</li>
+          <li>Relatorios completos</li>
+          <li>Gerenciar equipe (gerentes e vendedores)</li>
+        </ul>
+      </div>
+
+      <div class="role-card role-gerente">
+        <h3>Gerente</h3>
+        <p class="role-subtitle">Supervisor de campo</p>
+        <ul class="role-list">
+          <li>Monitorar rotas e vendedores</li>
+          <li>Acompanhar desempenho da equipe</li>
+          <li>Cadastrar clientes e criar emprestimos</li>
+          <li>Registrar pagamentos</li>
+          <li>Realizar aportes no caixa</li>
+          <li>Acessar relatorios e movimentacoes</li>
+          <li>Ver parcelas da semana</li>
+        </ul>
+      </div>
+
+      <div class="role-card role-vendedor">
+        <h3>Vendedor</h3>
+        <p class="role-subtitle">Trabalhador de campo</p>
+        <ul class="role-list">
+          <li>Ve apenas seus clientes e emprestimos</li>
+          <li>Cadastra clientes com GPS do celular</li>
+          <li>Cria emprestimos (formulario simplificado)</li>
+          <li>Registra pagamentos (total ou parcial)</li>
+          <li>Mapa dos clientes da rota</li>
+          <li>Dashboard pessoal: cobrancas do dia</li>
+          <li>Nao acessa caixa, relatorios ou config.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ EMPRESTIMO ══════════════════════════════════ -->
+<section id="emprestimo">
+  <div class="container">
+    <span class="section-label">Emprestimos</span>
+    <h2 class="section-title">Como funciona um emprestimo</h2>
+    <p class="section-desc">
+      Do momento da concessao ate a quitacao, o sistema automatiza todo o processo de calculo, geracao de parcelas e controle financeiro.
+    </p>
+
+    <div class="flow-container">
+      <div class="flow-block">
+        <div class="flow-number">1</div>
+        <div class="flow-content">
+          <h3>Selecao da rota</h3>
+          <p>Ao escolher a rota, o sistema carrega automaticamente a configuracao padrao: taxa de juros, periodicidade (diario, semanal, quinzenal ou mensal) e numero de parcelas. Esses campos sao pre-preenchidos, mas podem ser ajustados.</p>
+        </div>
+      </div>
+
+      <div class="flow-block">
+        <div class="flow-number">2</div>
+        <div class="flow-content">
+          <h3>Validacoes automaticas</h3>
+          <p>Antes de criar o emprestimo, o sistema verifica tres regras:</p>
+          <div class="flow-detail">
+            <strong>Saldo do caixa:</strong> A rota precisa ter saldo suficiente para cobrir o valor do emprestimo.<br>
+            <strong>Limite da rota:</strong> O valor nao pode ultrapassar o limite maximo configurado.<br>
+            <strong>Limite do cliente:</strong> A soma de emprestimos ativos do cliente nao pode exceder seu limite de credito.
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-block">
+        <div class="flow-number">3</div>
+        <div class="flow-content">
+          <h3>Calculo e criacao</h3>
+          <p>O sistema calcula o valor total com juros e o valor de cada parcela. Em seguida, gera automaticamente todas as parcelas com suas datas de vencimento e registra a saida de dinheiro no caixa da rota.</p>
+          <div class="formula">
+            <span class="highlight">Valor Total</span> = Valor Principal x (1 + Taxa / 100)<br>
+            <span class="highlight">Valor da Parcela</span> = Valor Total / Numero de Parcelas<br>
+            <span class="comment">// Exemplo: R$ 1.000 a 20% em 20 parcelas</span><br>
+            <span class="comment">// Total = R$ 1.200 | Parcela = R$ 60,00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-block">
+        <div class="flow-number">4</div>
+        <div class="flow-content">
+          <h3>Tudo acontece automaticamente</h3>
+          <p>Com um unico clique em "Salvar", o sistema executa tudo de uma vez: calcula os valores, cria todas as parcelas com datas e debita o caixa da rota. Nada precisa ser feito manualmente.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:3rem;margin-bottom:1rem;font-size:1.1rem;font-weight:700">Ciclo de vida do emprestimo</h3>
+    <div class="lifecycle">
+      <div class="lifecycle-step lc-active">Ativo</div>
+      <div class="lifecycle-arrow">&#8594;</div>
+      <div class="lifecycle-step lc-paid">Quitado</div>
+    </div>
+    <div class="lifecycle">
+      <div class="lifecycle-step lc-active">Ativo</div>
+      <div class="lifecycle-arrow">&#8594;</div>
+      <div class="lifecycle-step lc-late">Inadimplente</div>
+      <div class="lifecycle-arrow">&#8594;</div>
+      <div class="lifecycle-step lc-paid">Quitado</div>
+    </div>
+    <div class="lifecycle">
+      <div class="lifecycle-step lc-active">Ativo / Inadimplente</div>
+      <div class="lifecycle-arrow">&#8594;</div>
+      <div class="lifecycle-step lc-cancelled">Cancelado</div>
+    </div>
+
+    <div class="highlight-box info" style="margin-top:1.5rem">
+      <strong>Formulario simplificado do vendedor</strong>
+      O vendedor nao precisa definir data de vencimento — o sistema calcula automaticamente (amanha).
+      Ele tambem so ve os clientes e rotas vinculados a ele.
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ PAGAMENTOS ══════════════════════════════════ -->
+<section id="pagamentos">
+  <div class="container">
+    <span class="section-label">Pagamentos</span>
+    <h2 class="section-title">Registro de pagamentos</h2>
+    <p class="section-desc">
+      O sistema suporta pagamento total, parcial, e calcula automaticamente multas e juros para parcelas em atraso.
+    </p>
+
+    <div class="two-col">
+      <div>
+        <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:.75rem">Pagamento total</h3>
+        <p style="font-size:.9rem;color:var(--gray-600);margin-bottom:1rem">
+          Ao pagar o valor integral da parcela, ela e marcada como <strong>paga</strong> imediatamente.
+          Se for a ultima parcela do emprestimo, o emprestimo inteiro e marcado como <strong>quitado</strong> automaticamente.
+        </p>
+
+        <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:.75rem">Pagamento parcial</h3>
+        <p style="font-size:.9rem;color:var(--gray-600)">
+          O cliente pode pagar um valor menor do que o da parcela. O sistema registra o pagamento e acompanha o saldo restante.
+          A parcela so e marcada como paga quando a soma de todos os pagamentos atingir o valor total. O historico completo
+          de pagamentos de cada parcela fica visivel para consulta.
+        </p>
+      </div>
+
+      <div>
+        <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:.75rem">Multa e juros de mora</h3>
+        <p style="font-size:.9rem;color:var(--gray-600);margin-bottom:1rem">
+          Quando uma parcela esta <strong>atrasada</strong>, o sistema calcula automaticamente os acrescimos no momento do pagamento:
+        </p>
+
+        <div class="highlight-box warning">
+          <strong>Calculo automatico de acrescimos</strong>
+          <strong style="font-size:.85rem;font-weight:400">Multa:</strong> percentual fixo sobre o valor restante (ex: 2%)<br>
+          <strong style="font-size:.85rem;font-weight:400">Juros de mora:</strong> percentual diario x dias de atraso (ex: 0,033% ao dia)<br>
+          <strong style="font-size:.85rem;font-weight:400">Valor sugerido:</strong> restante + multa + juros (pre-preenchido no formulario)
+        </div>
+
+        <p style="font-size:.85rem;color:var(--gray-500);margin-top:.75rem">
+          Os percentuais de multa e juros sao configurados por rota pelo administrador.
+          O valor sugerido pode ser ajustado antes de confirmar.
+        </p>
+      </div>
+    </div>
+
+    <div class="highlight-box success" style="margin-top:2rem">
+      <strong>Rastreabilidade total</strong>
+      Cada pagamento registrado gera automaticamente uma entrada no caixa da rota, com registro de quem recebeu, quando, quanto e por qual meio (dinheiro, Pix ou transferencia).
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ CAIXA ═══════════════════════════════════════ -->
+<section id="caixa">
+  <div class="container">
+    <span class="section-label">Financeiro</span>
+    <h2 class="section-title">Controle de caixa</h2>
+    <p class="section-desc">
+      Cada rota possui seu proprio caixa. Todo dinheiro que entra ou sai e registrado automaticamente, garantindo rastreabilidade total.
+    </p>
+
+    <div class="highlight-box info">
+      <strong>Regra fundamental</strong>
+      O saldo do caixa nunca e alterado diretamente. Toda alteracao passa por uma movimentacao financeira com registro de saldo anterior, saldo posterior, responsavel e descricao.
+    </div>
+
+    <div class="cards-grid" style="margin-top:1.5rem">
+      <div class="card">
+        <div class="card-icon green">&#8593;</div>
+        <h3>Entradas</h3>
+        <p><strong>Pagamento de parcela:</strong> automatico ao registrar pagamento.<br>
+        <strong>Aporte de capital:</strong> admin ou gerente deposita dinheiro no caixa.<br>
+        <strong>Estorno por cancelamento:</strong> devolucao proporcional ao cancelar emprestimo.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon red">&#8595;</div>
+        <h3>Saidas</h3>
+        <p><strong>Concessao de emprestimo:</strong> automatico ao criar emprestimo (valor principal).<br>
+        <strong>Retirada:</strong> somente o admin pode retirar dinheiro do caixa.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon blue">&#128196;</div>
+        <h3>Historico completo</h3>
+        <p>Toda movimentacao registra: tipo (entrada/saida), origem, valor, saldo antes e depois, quem fez e quando. E possivel reconstruir todo o historico financeiro de qualquer rota.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:2.5rem;margin-bottom:1rem;font-size:1.1rem;font-weight:700">Cancelamento de emprestimo</h3>
+    <p style="font-size:.9rem;color:var(--gray-600);max-width:700px;margin-bottom:1rem">
+      O administrador pode cancelar um emprestimo informando um motivo obrigatorio. O sistema calcula automaticamente o estorno:
+    </p>
+    <div class="flow-detail">
+      <strong>Estorno = Valor Principal - Total ja pago pelo cliente</strong><br><br>
+      Se o cliente ja pagou algumas parcelas, o estorno e parcial — apenas a diferenca volta ao caixa.
+      Todas as parcelas pendentes sao canceladas, e as ja pagas permanecem no historico.
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ REGRAS ══════════════════════════════════════ -->
+<section id="regras">
+  <div class="container">
+    <span class="section-label">Regras de Negocio</span>
+    <h2 class="section-title">Regras que o sistema aplica</h2>
+    <p class="section-desc">
+      Estas regras sao aplicadas automaticamente pelo sistema, sem necessidade de intervencao manual.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Regra</th>
+            <th>Como funciona</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Juros simples</strong></td>
+            <td>Total = Principal x (1 + Taxa%). A taxa e gravada no contrato — mudancas futuras nao afetam contratos existentes.</td>
+          </tr>
+          <tr>
+            <td><strong>Parcelas automaticas</strong></td>
+            <td>Ao criar emprestimo, todas as parcelas sao geradas automaticamente com datas calculadas pela periodicidade escolhida.</td>
+          </tr>
+          <tr>
+            <td><strong>Quitacao automatica</strong></td>
+            <td>Ao pagar a ultima parcela pendente, o emprestimo e marcado como quitado automaticamente.</td>
+          </tr>
+          <tr>
+            <td><strong>Validacao de saldo</strong></td>
+            <td>Nao e possivel conceder emprestimo se o caixa da rota nao tem saldo suficiente.</td>
+          </tr>
+          <tr>
+            <td><strong>Limite por rota</strong></td>
+            <td>O valor principal nao pode ultrapassar o limite maximo configurado na rota.</td>
+          </tr>
+          <tr>
+            <td><strong>Limite por cliente</strong></td>
+            <td>A soma dos emprestimos ativos do cliente nao pode ultrapassar seu limite de credito individual.</td>
+          </tr>
+          <tr>
+            <td><strong>Pagamento parcial</strong></td>
+            <td>Aceita qualquer valor. A parcela so e quitada quando a soma dos pagamentos cobre o valor total.</td>
+          </tr>
+          <tr>
+            <td><strong>Multa e juros</strong></td>
+            <td>Calculados automaticamente ao pagar parcela atrasada. Percentuais configurados por rota.</td>
+          </tr>
+          <tr>
+            <td><strong>Inadimplencia automatica</strong></td>
+            <td>Processo diario marca parcelas vencidas como atrasadas e emprestimos com atraso como inadimplentes.</td>
+          </tr>
+          <tr>
+            <td><strong>Cancelamento com estorno</strong></td>
+            <td>Ao cancelar, o sistema devolve ao caixa o valor proporcional (principal - ja pago). Exige motivo.</td>
+          </tr>
+          <tr>
+            <td><strong>Isolamento de dados</strong></td>
+            <td>Cada empresa ve apenas seus dados. Vendedores so veem dados das suas rotas.</td>
+          </tr>
+          <tr>
+            <td><strong>Rastreabilidade total</strong></td>
+            <td>Toda entrada e saida do caixa e registrada com data, valor, responsavel e contexto. Nenhuma alteracao direta.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ SEGURANCA ═══════════════════════════════════ -->
+<section id="seguranca">
+  <div class="container">
+    <span class="section-label">Seguranca</span>
+    <h2 class="section-title">Isolamento e protecao dos dados</h2>
+    <p class="section-desc">
+      O sistema foi projetado para garantir que cada usuario veja apenas o que lhe compete, e que nenhuma operacao financeira aconteca sem registro.
+    </p>
+
+    <div class="two-col">
+      <div>
+        <div class="card" style="margin-bottom:1.5rem">
+          <h3>Multi-tenant (multi-empresa)</h3>
+          <p>Cada empresa e completamente isolada. Usuarios de uma empresa nunca veem dados de outra. Todos os filtros sao aplicados automaticamente.</p>
+        </div>
+        <div class="card">
+          <h3>Isolamento do vendedor</h3>
+          <p>O vendedor so ve clientes, emprestimos e dados das rotas onde esta vinculado. Nao consegue acessar informacoes de outros vendedores ou rotas.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:1.5rem">
+          <h3>Controle de permissao</h3>
+          <p>Cada tela do sistema verifica o perfil do usuario antes de permitir acesso. Tentativas de acesso indevido sao redirecionadas com mensagem de erro.</p>
+        </div>
+        <div class="card">
+          <h3>Auditoria financeira</h3>
+          <p>Toda movimentacao no caixa registra: quem fez, quando, quanto, de onde veio e qual o saldo antes e depois. Nada e alterado sem rastro.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ CONFIGURACOES ═══════════════════════════════ -->
+<section id="configuracoes">
+  <div class="container">
+    <span class="section-label">Configuracoes</span>
+    <h2 class="section-title">O que pode ser configurado</h2>
+    <p class="section-desc">
+      O administrador controla todas as configuracoes do sistema, que sao aplicadas automaticamente na operacao.
+    </p>
+
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon blue">&#9881;</div>
+        <h3>Dados da empresa</h3>
+        <p>Nome, CNPJ, e-mail e telefone. Exibidos no sistema e nos futuros contratos.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon green">&#128200;</div>
+        <h3>Taxa de juros por rota</h3>
+        <p>Cada rota pode ter sua propria taxa. Ao criar emprestimo, a taxa e pre-preenchida e gravada no contrato.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon yellow">&#128197;</div>
+        <h3>Periodicidade e parcelas</h3>
+        <p>Diario, semanal, quinzenal ou mensal. Numero de parcelas padrao por rota. Tudo pre-preenchido ao selecionar a rota.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon red">&#128679;</div>
+        <h3>Limite maximo por rota</h3>
+        <p>Valor maximo que pode ser emprestado. Validado automaticamente — o sistema bloqueia valores acima do limite.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon purple">&#128176;</div>
+        <h3>Limite de credito por cliente</h3>
+        <p>Opcional e individual. Se nao definido, o sistema usa o limite da rota. A soma dos emprestimos ativos e verificada.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon red">&#9888;</div>
+        <h3>Multa e juros de mora</h3>
+        <p>Configurados por rota: multa fixa (%) e juros diario (%). Calculados automaticamente ao pagar parcela atrasada.</p>
+      </div>
+    </div>
+
+    <div class="highlight-box info" style="margin-top:2rem">
+      <strong>Importante</strong>
+      Mudancas nas configuracoes afetam apenas novos emprestimos. Contratos existentes mantem os valores originais gravados no momento da criacao.
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ PERMISSOES ══════════════════════════════════ -->
+<section id="permissoes">
+  <div class="container">
+    <span class="section-label">Permissoes</span>
+    <h2 class="section-title">Quem pode fazer o que</h2>
+    <p class="section-desc">
+      Tabela completa de permissoes por perfil de usuario.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Funcionalidade</th>
+            <th style="text-align:center">Admin</th>
+            <th style="text-align:center">Gerente</th>
+            <th style="text-align:center">Vendedor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Painel (dashboard)</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td></tr>
+          <tr><td>Criar e editar rotas</td><td class="check" style="text-align:center">&#10003;</td><td class="cross" style="text-align:center">—</td><td class="cross" style="text-align:center">—</td></tr>
+          <tr><td>Ver detalhes das rotas</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="cross" style="text-align:center">—</td></tr>
+          <tr><td>Cadastrar e editar clientes</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003; *</td></tr>
+          <tr><td>Mapa de clientes</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003; *</td></tr>
+          <tr><td>Criar emprestimos</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003; **</td></tr>
+          <tr><td>Cancelar emprestimos</td><td class="check" style="text-align:center">&#10003;</td><td class="cross" style="text-align:center">—</td><td class="cross" style="text-align:center">—</td></tr>
+          <tr><td>Registrar pagamentos</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td></tr>
+          <tr><td>Ver caixa e movimentacoes</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="cross" style="text-align:center">—</td></tr>
+          <tr><td>Aporte no caixa</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="cross" style="text-align:center">—</td></tr>
+          <tr><td>Retirada do caixa</td><td class="check" style="text-align:center">&#10003;</td><td class="cross" style="text-align:center">—</td><td class="cross" style="text-align:center">—</td></tr>
+          <tr><td>Relatorios</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="cross" style="text-align:center">—</td></tr>
+          <tr><td>Configuracoes do sistema</td><td class="check" style="text-align:center">&#10003;</td><td class="cross" style="text-align:center">—</td><td class="cross" style="text-align:center">—</td></tr>
+          <tr><td>Definir limite de credito do cliente</td><td class="check" style="text-align:center">&#10003;</td><td class="check" style="text-align:center">&#10003;</td><td class="cross" style="text-align:center">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:.82rem;color:var(--gray-500);margin-top:1rem">
+      <strong>*</strong> Vendedor ve apenas clientes e dados das rotas onde esta vinculado.<br>
+      <strong>**</strong> Vendedor cria emprestimo com restricoes: nao escolhe data de vencimento (calculada automaticamente), so ve seus clientes e rotas.
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ FOOTER ══════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-brand">Easy<span>Cred</span></div>
+  <p>Sistema de Gestao de Credito Popular</p>
+  <p style="margin-top:.5rem;font-size:.78rem;color:var(--gray-500)">SystemPay.tec &mdash; Documentacao v1.0</p>
+</footer>
+
+</body>
+</html>
