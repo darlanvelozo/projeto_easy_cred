@@ -1,6 +1,6 @@
 """
 Management command: popular_banco
-Popula o banco com dados realistas para demonstração do sistema.
+Popula o banco com dados realistas de operacao de credito no Piaui.
 
 Uso:
     python manage.py popular_banco
@@ -9,6 +9,7 @@ Uso:
 
 from decimal import Decimal
 from datetime import date, timedelta
+import random
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -20,95 +21,122 @@ from emprestimos.models import Emprestimo, Parcela
 from financeiro.models import Pagamento, MovimentacaoFinanceira
 
 
-# ─── dados fictícios ──────────────────────────────────────────────────────────
+# ─── Empresa ─────────────────────────────────────────────────────────────────
 
-EMPRESAS = [
-    {"nome": "Crédito Fácil Ltda",   "cnpj": "12.345.678/0001-90", "email": "contato@creditofacil.com.br",   "telefone": "(11) 98000-1111"},
-    {"nome": "FinCred Soluções ME",   "cnpj": "98.765.432/0001-10", "email": "financeiro@fincred.com.br",     "telefone": "(21) 97000-2222"},
+EMPRESA = {
+    "nome": "EasyCred Piaui",
+    "cnpj": "45.123.678/0001-55",
+    "email": "contato@easycredpi.com.br",
+    "telefone": "(86) 99900-1000",
+}
+
+# ─── Usuarios ────────────────────────────────────────────────────────────────
+# (username, nome, sobrenome, perfil, senha)
+
+USUARIOS = [
+    ("admin1",     "Darlan",   "Velozo",     "admin",    "admin123"),
+    ("gerente1",   "Marcos",   "Oliveira",   "gerente",  "gerente123"),
+    ("vendedor1",  "Raimundo", "Silva",      "vendedor", "vend123"),
+    ("vendedor2",  "Francisco","Santos",     "vendedor", "vend123"),
 ]
 
-# usuários por empresa: (username, nome, sobrenome, perfil, senha)
-USUARIOS = {
-    "Crédito Fácil Ltda": [
-        ("admin_cf",    "Carlos",   "Mendes",   "admin",    "admin123"),
-        ("gerente_cf",  "Fernanda", "Lima",     "gerente",  "gerente123"),
-        ("vendedor_cf1","Ricardo",  "Souza",    "vendedor", "vend123"),
-        ("vendedor_cf2","Patrícia", "Oliveira", "vendedor", "vend123"),
+# ─── Rotas (2 cidades do Piaui) ─────────────────────────────────────────────
+
+ROTAS = [
+    {
+        "nome": "Rota Teresina",
+        "taxa": Decimal("20.00"),
+        "periodicidade": "diario",
+        "parcelas": 20,
+        "limite": Decimal("3000.00"),
+        "aporte": Decimal("15000.00"),
+        "vendedores": ["vendedor1"],
+    },
+    {
+        "nome": "Rota Picos",
+        "taxa": Decimal("25.00"),
+        "periodicidade": "diario",
+        "parcelas": 24,
+        "limite": Decimal("2000.00"),
+        "aporte": Decimal("10000.00"),
+        "vendedores": ["vendedor2"],
+    },
+]
+
+# ─── Clientes ────────────────────────────────────────────────────────────────
+# Nomes comuns do Piaui com enderecos e coordenadas reais
+
+CLIENTES = {
+    "Rota Teresina": [
+        {"nome": "Maria Jose da Silva",       "cpf": "111.222.333-01", "telefone": "(86) 99811-0001", "endereco": "Rua Coelho Rodrigues, 1500",   "bairro": "Centro",         "cidade": "Teresina", "uf": "PI", "lat": -5.0892, "lng": -42.8019},
+        {"nome": "Raimunda Nonata Sousa",      "cpf": "111.222.333-02", "telefone": "(86) 99812-0002", "endereco": "Rua Areolino de Abreu, 800",  "bairro": "Centro",         "cidade": "Teresina", "uf": "PI", "lat": -5.0887, "lng": -42.8038},
+        {"nome": "Francisco das Chagas Lima",  "cpf": "111.222.333-03", "telefone": "(86) 99813-0003", "endereco": "Av. Frei Serafim, 2200",      "bairro": "Centro",         "cidade": "Teresina", "uf": "PI", "lat": -5.0919, "lng": -42.8058},
+        {"nome": "Antonia Alves de Sousa",     "cpf": "111.222.333-04", "telefone": "(86) 99814-0004", "endereco": "Rua Simplicio Mendes, 350",   "bairro": "Pirajá",         "cidade": "Teresina", "uf": "PI", "lat": -5.0788, "lng": -42.7943},
+        {"nome": "Jose Ribamar Pereira",       "cpf": "111.222.333-05", "telefone": "(86) 99815-0005", "endereco": "Rua Magalhães Filho, 120",    "bairro": "Marquês",        "cidade": "Teresina", "uf": "PI", "lat": -5.0857, "lng": -42.7973},
+        {"nome": "Francisca Carvalho Santos",  "cpf": "111.222.333-06", "telefone": "(86) 99816-0006", "endereco": "Av. Miguel Rosa, 4500",       "bairro": "Ilhotas",        "cidade": "Teresina", "uf": "PI", "lat": -5.0832, "lng": -42.8095},
+        {"nome": "Antonio Soares Filho",       "cpf": "111.222.333-07", "telefone": "(86) 99817-0007", "endereco": "Rua Desemb. Freitas, 600",    "bairro": "Noivos",         "cidade": "Teresina", "uf": "PI", "lat": -5.0743, "lng": -42.7881},
+        {"nome": "Luzia Ferreira Costa",       "cpf": "111.222.333-08", "telefone": "(86) 99818-0008", "endereco": "Rua Firmino Pires, 90",       "bairro": "Centro",         "cidade": "Teresina", "uf": "PI", "lat": -5.0901, "lng": -42.8003},
+        {"nome": "Pedro Paulo de Moura",       "cpf": "111.222.333-09", "telefone": "(86) 99819-0009", "endereco": "Av. Maranhao, 1300",          "bairro": "Matinha",        "cidade": "Teresina", "uf": "PI", "lat": -5.0776, "lng": -42.7919},
+        {"nome": "Ana Maria Goncalves",        "cpf": "111.222.333-10", "telefone": "(86) 99820-0010", "endereco": "Rua Lisandro Nogueira, 200",  "bairro": "Centro",         "cidade": "Teresina", "uf": "PI", "lat": -5.0863, "lng": -42.8012},
+        {"nome": "Sebastiao Rodrigues Neto",   "cpf": "111.222.333-11", "telefone": "(86) 99821-0011", "endereco": "Rua David Caldas, 450",       "bairro": "Centro",         "cidade": "Teresina", "uf": "PI", "lat": -5.0880, "lng": -42.8045},
+        {"nome": "Teresinha de Jesus Araujo",  "cpf": "111.222.333-12", "telefone": "(86) 99822-0012", "endereco": "Rua Barroso, 700",            "bairro": "Centro",         "cidade": "Teresina", "uf": "PI", "lat": -5.0910, "lng": -42.8030},
+        {"nome": "Joao Batista Nascimento",    "cpf": "111.222.333-13", "telefone": "(86) 99823-0013", "endereco": "Av. Centenario, 3000",        "bairro": "Dirceu Arcoverde","cidade": "Teresina", "uf": "PI", "lat": -5.1018, "lng": -42.7623},
+        {"nome": "Domingas Ribeiro Lopes",     "cpf": "111.222.333-14", "telefone": "(86) 99824-0014", "endereco": "Rua Rui Barbosa, 55",         "bairro": "Piçarra",        "cidade": "Teresina", "uf": "PI", "lat": -5.0825, "lng": -42.8110},
+        {"nome": "Carlos Alberto Mendes",      "cpf": "111.222.333-15", "telefone": "(86) 99825-0015", "endereco": "Rua Olavo Bilac, 180",        "bairro": "Jockey",         "cidade": "Teresina", "uf": "PI", "lat": -5.0680, "lng": -42.7860},
     ],
-    "FinCred Soluções ME": [
-        ("admin_fc",    "Marcos",   "Ferreira", "admin",    "admin123"),
-        ("gerente_fc",  "Juliana",  "Costa",    "gerente",  "gerente123"),
-        ("vendedor_fc1","Anderson", "Santos",   "vendedor", "vend123"),
-        ("vendedor_fc2","Beatriz",  "Alves",    "vendedor", "vend123"),
+    "Rota Picos": [
+        {"nome": "Manoel Bezerra da Cruz",     "cpf": "222.333.444-01", "telefone": "(89) 99901-0001", "endereco": "Rua Monsenhor Hipolito, 500",  "bairro": "Centro",         "cidade": "Picos", "uf": "PI", "lat": -7.0769, "lng": -41.4669},
+        {"nome": "Josefa Maria do Carmo",      "cpf": "222.333.444-02", "telefone": "(89) 99902-0002", "endereco": "Rua Coelho de Resende, 200",   "bairro": "Centro",         "cidade": "Picos", "uf": "PI", "lat": -7.0773, "lng": -41.4658},
+        {"nome": "Cicero Pereira de Sousa",    "cpf": "222.333.444-03", "telefone": "(89) 99903-0003", "endereco": "Av. Senador Helvidio Nunes, 900","bairro": "Junco",         "cidade": "Picos", "uf": "PI", "lat": -7.0810, "lng": -41.4710},
+        {"nome": "Marlene dos Santos Oliveira","cpf": "222.333.444-04", "telefone": "(89) 99904-0004", "endereco": "Rua Benjamin Constant, 150",   "bairro": "Centro",         "cidade": "Picos", "uf": "PI", "lat": -7.0758, "lng": -41.4650},
+        {"nome": "Geraldo Alves Teixeira",     "cpf": "222.333.444-05", "telefone": "(89) 99905-0005", "endereco": "Rua Demerval Lobao, 80",       "bairro": "Conduru",        "cidade": "Picos", "uf": "PI", "lat": -7.0825, "lng": -41.4630},
+        {"nome": "Rita de Cassia Moura",       "cpf": "222.333.444-06", "telefone": "(89) 99906-0006", "endereco": "Rua Cel. Zuza, 300",           "bairro": "Centro",         "cidade": "Picos", "uf": "PI", "lat": -7.0765, "lng": -41.4675},
+        {"nome": "Expedito Gomes da Silva",    "cpf": "222.333.444-07", "telefone": "(89) 99907-0007", "endereco": "Av. Presidente Vargas, 1200",  "bairro": "Catavento",      "cidade": "Picos", "uf": "PI", "lat": -7.0740, "lng": -41.4590},
+        {"nome": "Ivone Maria Rodrigues",      "cpf": "222.333.444-08", "telefone": "(89) 99908-0008", "endereco": "Rua Jose Borges, 45",          "bairro": "Parque de Exposicao","cidade": "Picos", "uf": "PI", "lat": -7.0830, "lng": -41.4580},
+        {"nome": "Jose Airton Sousa Lima",     "cpf": "222.333.444-09", "telefone": "(89) 99909-0009", "endereco": "Rua Pres. Kennedy, 650",       "bairro": "Bomba",          "cidade": "Picos", "uf": "PI", "lat": -7.0700, "lng": -41.4695},
+        {"nome": "Vera Lucia Carvalho",        "cpf": "222.333.444-10", "telefone": "(89) 99910-0010", "endereco": "Rua Oscar Clark, 100",         "bairro": "Junco",          "cidade": "Picos", "uf": "PI", "lat": -7.0795, "lng": -41.4720},
+        {"nome": "Damiao Pereira Nunes",       "cpf": "222.333.444-11", "telefone": "(89) 99911-0011", "endereco": "Rua Anisio de Abreu, 70",      "bairro": "Paroquial",      "cidade": "Picos", "uf": "PI", "lat": -7.0780, "lng": -41.4640},
+        {"nome": "Creusa Barros de Sousa",     "cpf": "222.333.444-12", "telefone": "(89) 99912-0012", "endereco": "Rua 7 de Setembro, 400",       "bairro": "Centro",         "cidade": "Picos", "uf": "PI", "lat": -7.0755, "lng": -41.4660},
     ],
 }
 
-ROTAS = {
-    "Crédito Fácil Ltda": [
-        {"nome": "Rota Centro",     "taxa": Decimal("15.00"), "periodicidade": "semanal",   "parcelas": 10, "vendedores": ["vendedor_cf1"]},
-        {"nome": "Rota Zona Norte", "taxa": Decimal("18.00"), "periodicidade": "quinzenal", "parcelas": 6,  "vendedores": ["vendedor_cf2"]},
-    ],
-    "FinCred Soluções ME": [
-        {"nome": "Rota Baixada",    "taxa": Decimal("20.00"), "periodicidade": "semanal",   "parcelas": 12, "vendedores": ["vendedor_fc1"]},
-        {"nome": "Rota Litoral",    "taxa": Decimal("12.00"), "periodicidade": "mensal",    "parcelas": 6,  "vendedores": ["vendedor_fc2"]},
-    ],
-}
+# ─── Emprestimos ─────────────────────────────────────────────────────────────
+# Definidos por cliente: (valor_principal, status, parcelas_pagas, dias_inicio)
+# dias_inicio = quantos dias atras o emprestimo foi criado
+# A maioria e diario, valores entre R$200 e R$2000
 
-CLIENTES_POR_ROTA = {
-    "Rota Centro": [
-        {"nome": "José Aparecido Silva",   "cpf": "111.222.333-44", "telefone": "(11) 99111-0001", "endereco": "Rua das Flores, 10",   "bairro": "Centro",      "cidade": "São Paulo",    "uf": "SP"},
-        {"nome": "Maria das Graças Nunes", "cpf": "222.333.444-55", "telefone": "(11) 99222-0002", "endereco": "Av. Paulista, 500",    "bairro": "Bela Vista",  "cidade": "São Paulo",    "uf": "SP"},
-        {"nome": "Antônio Pereira",        "cpf": "333.444.555-66", "telefone": "(11) 99333-0003", "endereco": "Rua Augusta, 200",     "bairro": "Consolação",  "cidade": "São Paulo",    "uf": "SP"},
-        {"nome": "Rosilene Barbosa",       "cpf": "444.555.666-77", "telefone": "(11) 99444-0004", "endereco": "Rua Direita, 15",      "bairro": "Centro",      "cidade": "São Paulo",    "uf": "SP"},
-        {"nome": "Valdir Moraes",          "cpf": "555.666.777-88", "telefone": "(11) 99555-0005", "endereco": "Rua 7 de Abril, 88",   "bairro": "República",   "cidade": "São Paulo",    "uf": "SP"},
-    ],
-    "Rota Zona Norte": [
-        {"nome": "Cláudia Rodrigues",      "cpf": "666.777.888-99", "telefone": "(11) 99666-0006", "endereco": "Rua Voluntários, 50",  "bairro": "Santana",     "cidade": "São Paulo",    "uf": "SP"},
-        {"nome": "Edson Carvalho",         "cpf": "777.888.999-00", "telefone": "(11) 99777-0007", "endereco": "Av. Tucuruvi, 300",    "bairro": "Tucuruvi",    "cidade": "São Paulo",    "uf": "SP"},
-        {"nome": "Sueli Gonçalves",        "cpf": "888.999.000-11", "telefone": "(11) 99888-0008", "endereco": "Rua do Horto, 12",     "bairro": "Casa Verde",  "cidade": "São Paulo",    "uf": "SP"},
-        {"nome": "Gilson Teixeira",        "cpf": "999.000.111-22", "telefone": "(11) 99999-0009", "endereco": "Rua Jaçanã, 77",       "bairro": "Jaçanã",      "cidade": "São Paulo",    "uf": "SP"},
-    ],
-    "Rota Baixada": [
-        {"nome": "Luciana Campos",         "cpf": "101.202.303-40", "telefone": "(21) 98101-0010", "endereco": "Rua 1, 100",           "bairro": "Centro",      "cidade": "Duque de Caxias", "uf": "RJ"},
-        {"nome": "Roberto Dias",           "cpf": "202.303.404-50", "telefone": "(21) 98202-0011", "endereco": "Av. Presidente Vargas","bairro": "Jardim",      "cidade": "Nova Iguaçu",     "uf": "RJ"},
-        {"nome": "Eliane Melo",            "cpf": "303.404.505-60", "telefone": "(21) 98303-0012", "endereco": "Rua das Palmeiras, 5", "bairro": "Figueira",    "cidade": "Nilópolis",       "uf": "RJ"},
-        {"nome": "Paulo Henrique Ramos",   "cpf": "404.505.606-70", "telefone": "(21) 98404-0013", "endereco": "Rua Nova, 44",         "bairro": "Heliópolis",  "cidade": "Belford Roxo",    "uf": "RJ"},
-        {"nome": "Simone Araújo",          "cpf": "505.606.707-80", "telefone": "(21) 98505-0014", "endereco": "Travessa do Sol, 3",   "bairro": "Centro",      "cidade": "São João de Meriti","uf": "RJ"},
-    ],
-    "Rota Litoral": [
-        {"nome": "Fernando Nascimento",    "cpf": "606.707.808-90", "telefone": "(21) 97606-0015", "endereco": "Rua da Praia, 20",     "bairro": "Barra",       "cidade": "Cabo Frio",    "uf": "RJ"},
-        {"nome": "Adriana Pinto",          "cpf": "707.808.909-01", "telefone": "(21) 97707-0016", "endereco": "Av. Atlântica, 1000",  "bairro": "Praia Grande","cidade": "Búzios",       "uf": "RJ"},
-        {"nome": "Jorge Luis Machado",     "cpf": "808.909.010-12", "telefone": "(21) 97808-0017", "endereco": "Rua das Ondas, 8",     "bairro": "Centro",      "cidade": "Arraial do Cabo","uf": "RJ"},
-        {"nome": "Neuza Correia",          "cpf": "909.010.111-23", "telefone": "(21) 97909-0018", "endereco": "Rua do Caju, 55",      "bairro": "Iguabinha",   "cidade": "Araruama",     "uf": "RJ"},
-    ],
-}
+EMPRESTIMOS = {
+    # === ROTA TERESINA (20 parcelas diarias, taxa 20%) ===
+    # Clientes com emprestimos ativos em andamento
+    "Maria Jose da Silva":       [(500,  "ativo",        12, 15), (300, "quitado", 20, 50)],
+    "Raimunda Nonata Sousa":     [(800,  "ativo",        8,  12)],
+    "Francisco das Chagas Lima": [(1000, "ativo",        15, 18), (600, "quitado", 20, 60)],
+    "Antonia Alves de Sousa":    [(400,  "ativo",        5,  8)],
+    "Jose Ribamar Pereira":      [(1200, "ativo",        10, 14)],
+    "Francisca Carvalho Santos": [(600,  "ativo",        3,  5)],
+    "Antonio Soares Filho":      [(1500, "inadimplente", 6,  25)],  # parou de pagar ha dias
+    "Luzia Ferreira Costa":      [(350,  "ativo",        18, 22)],  # quase quitando
+    "Pedro Paulo de Moura":      [(900,  "inadimplente", 4,  30)],  # inadimplente serio
+    "Ana Maria Goncalves":       [(700,  "ativo",        7,  10)],
+    "Sebastiao Rodrigues Neto":  [(2000, "ativo",        2,  5),   (800, "quitado", 20, 45)],
+    "Teresinha de Jesus Araujo": [(450,  "ativo",        14, 18)],
+    "Joao Batista Nascimento":   [(1000, "quitado",      20, 40)],  # ja quitou
+    "Domingas Ribeiro Lopes":    [(500,  "ativo",        9,  13)],
+    "Carlos Alberto Mendes":     [(1800, "ativo",        1,  3)],   # emprestimo recente
 
-# empréstimos por cliente: (valor_principal, status, parcelas_pagas, dias_atraso)
-# parcelas_pagas = quantas parcelas já foram pagas
-# dias_atraso    = se > 0, o último vencimento está atrasado
-EMPRESTIMOS_POR_CLIENTE = {
-    # Rota Centro
-    "José Aparecido Silva":   [(500,  "ativo",        3, 0),  (300, "quitado", 10, 0)],
-    "Maria das Graças Nunes": [(800,  "ativo",        5, 0),  (200, "quitado", 10, 0)],
-    "Antônio Pereira":        [(1000, "inadimplente", 2, 14)],
-    "Rosilene Barbosa":       [(400,  "ativo",        1, 0)],
-    "Valdir Moraes":          [(600,  "ativo",        4, 0),  (700, "quitado", 10, 0)],
-    # Rota Zona Norte
-    "Cláudia Rodrigues":      [(500,  "ativo",        2, 0)],
-    "Edson Carvalho":         [(900,  "inadimplente", 1, 21)],
-    "Sueli Gonçalves":        [(350,  "ativo",        3, 0),  (300, "quitado", 10, 0)],
-    "Gilson Teixeira":        [(1200, "ativo",        6, 0)],
-    # Rota Baixada
-    "Luciana Campos":         [(600,  "ativo",        4, 0)],
-    "Roberto Dias":           [(1000, "ativo",        2, 0),  (500, "quitado", 12, 0)],
-    "Eliane Melo":            [(400,  "inadimplente", 1, 30)],
-    "Paulo Henrique Ramos":   [(800,  "ativo",        5, 0)],
-    "Simone Araújo":          [(500,  "ativo",        3, 0)],
-    # Rota Litoral
-    "Fernando Nascimento":    [(2000, "ativo",        2, 0)],
-    "Adriana Pinto":          [(1500, "ativo",        1, 0),  (800, "quitado", 6, 0)],
-    "Jorge Luis Machado":     [(600,  "inadimplente", 0, 45)],
-    "Neuza Correia":          [(300,  "ativo",        3, 0)],
+    # === ROTA PICOS (24 parcelas diarias, taxa 25%) ===
+    "Manoel Bezerra da Cruz":    [(600,  "ativo",        16, 20)],
+    "Josefa Maria do Carmo":     [(400,  "ativo",        10, 14), (300, "quitado", 24, 55)],
+    "Cicero Pereira de Sousa":   [(1000, "inadimplente", 5,  28)],  # inadimplente
+    "Marlene dos Santos Oliveira":[(500, "ativo",        20, 24)],  # quase quitando
+    "Geraldo Alves Teixeira":    [(800,  "ativo",        7,  11)],
+    "Rita de Cassia Moura":      [(350,  "ativo",        3,  6)],
+    "Expedito Gomes da Silva":   [(1500, "ativo",        12, 16), (700, "quitado", 24, 50)],
+    "Ivone Maria Rodrigues":     [(450,  "ativo",        8,  12)],
+    "Jose Airton Sousa Lima":    [(2000, "inadimplente", 3,  22)],  # inadimplente alto valor
+    "Vera Lucia Carvalho":       [(600,  "quitado",      24, 40)],  # ja quitou
+    "Damiao Pereira Nunes":      [(900,  "ativo",        14, 18)],
+    "Creusa Barros de Sousa":    [(500,  "ativo",        6,  10)],
 }
 
 
@@ -130,7 +158,7 @@ def _movimentar_aporte(caixa, valor, usuario, descricao=""):
 
 
 class Command(BaseCommand):
-    help = "Popula o banco com dados realistas para demonstração"
+    help = "Popula o banco com dados realistas de operacao de credito no Piaui"
 
     def add_arguments(self, parser):
         parser.add_argument("--limpar", action="store_true", help="Limpa dados existentes antes de popular")
@@ -147,202 +175,238 @@ class Command(BaseCommand):
             CaixaRota.objects.all().delete()
             ConfiguracaoRota.objects.all().delete()
             Rota.objects.all().delete()
-            Usuario.objects.filter(is_superuser=False).delete()
+            # Desvincula todos os usuarios da empresa e deleta tudo
+            Usuario.objects.all().update(empresa=None)
+            Usuario.objects.all().delete()
             Empresa.objects.all().delete()
             self.stdout.write(self.style.WARNING("  Dados removidos."))
 
         hoje = date.today()
+        formas_pagamento = ["dinheiro", "dinheiro", "dinheiro", "pix", "dinheiro"]  # maioria dinheiro
 
-        # ── 1. Empresas ───────────────────────────────────────────────────────
-        self.stdout.write("\n[1/6] Criando empresas e usuários...")
-        usuarios_map = {}  # username → objeto Usuario
+        # ── 1. Empresa ───────────────────────────────────────────────────────
+        self.stdout.write("\n[1/6] Criando empresa...")
+        empresa, _ = Empresa.objects.get_or_create(
+            cnpj=EMPRESA["cnpj"],
+            defaults={k: v for k, v in EMPRESA.items() if k != "cnpj"},
+        )
+        self.stdout.write(f"  + {empresa.nome}")
 
-        for emp_data in EMPRESAS:
-            empresa, _ = Empresa.objects.get_or_create(
-                cnpj=emp_data["cnpj"],
-                defaults={k: v for k, v in emp_data.items() if k != "cnpj"},
+        # ── 2. Usuarios ──────────────────────────────────────────────────────
+        self.stdout.write("\n[2/6] Criando usuarios...")
+        usuarios_map = {}
+
+        for username, nome, sobrenome, perfil, senha in USUARIOS:
+            if not Usuario.objects.filter(username=username).exists():
+                u = Usuario.objects.create_user(
+                    username=username, password=senha,
+                    first_name=nome, last_name=sobrenome,
+                    email=f"{username}@easycredpi.com.br",
+                    empresa=empresa, perfil=perfil,
+                )
+                self.stdout.write(f"  + {perfil:8s}  {username}  (senha: {senha})")
+            else:
+                u = Usuario.objects.get(username=username)
+            usuarios_map[username] = u
+
+        # Superuser
+        if not Usuario.objects.filter(username="admin").exists():
+            Usuario.objects.create_superuser(
+                username="admin", password="admin123",
+                email="admin@easycredpi.com.br",
             )
-            self.stdout.write(f"  + Empresa: {empresa.nome}")
+            self.stdout.write(f"  + {'super':8s}  admin  (senha: admin123)")
 
-            # ── 2. Usuários ───────────────────────────────────────────────────
-            for username, nome, sobrenome, perfil, senha in USUARIOS[empresa.nome]:
-                if not Usuario.objects.filter(username=username).exists():
-                    u = Usuario.objects.create_user(
-                        username=username,
-                        password=senha,
-                        first_name=nome,
-                        last_name=sobrenome,
-                        email=f"{username}@easycred.com.br",
-                        empresa=empresa,
-                        perfil=perfil,
-                    )
-                    self.stdout.write(f"    → {perfil:8s}  {username}  (senha: {senha})")
-                else:
-                    u = Usuario.objects.get(username=username)
-                usuarios_map[username] = u
+        # ── 3. Rotas ─────────────────────────────────────────────────────────
+        self.stdout.write("\n[3/6] Criando rotas (Teresina e Picos)...")
+        rotas_map = {}
+        gerente = usuarios_map["gerente1"]
 
-        # ── 3. Rotas ──────────────────────────────────────────────────────────
-        self.stdout.write("\n[2/6] Criando rotas...")
-        rotas_map = {}  # nome da rota → objeto Rota
+        for r in ROTAS:
+            rota, _ = Rota.objects.get_or_create(nome=r["nome"], empresa=empresa)
+            rotas_map[rota.nome] = rota
+            self.stdout.write(f"  + {rota.nome} ({r['periodicidade']}, {r['taxa']}%, {r['parcelas']}x, limite R${r['limite']})")
 
-        for emp_data in EMPRESAS:
-            empresa = Empresa.objects.get(cnpj=emp_data["cnpj"])
-            for r in ROTAS[empresa.nome]:
-                rota, _ = Rota.objects.get_or_create(nome=r["nome"], empresa=empresa)
-                rotas_map[rota.nome] = rota
-                self.stdout.write(f"  + Rota: {rota.nome} ({r['periodicidade']}, {r['taxa']}% juros)")
+            ConfiguracaoRota.objects.get_or_create(
+                rota=rota,
+                defaults={
+                    "taxa_juros_padrao": r["taxa"],
+                    "periodicidade_padrao": r["periodicidade"],
+                    "num_parcelas_padrao": r["parcelas"],
+                    "limite_emprestimo_max": r["limite"],
+                },
+            )
 
-                ConfiguracaoRota.objects.get_or_create(
-                    rota=rota,
+            caixa, _ = CaixaRota.objects.get_or_create(rota=rota)
+            if caixa.saldo == 0:
+                _movimentar_aporte(caixa, r["aporte"], gerente,
+                                   descricao=f"Capital inicial — {rota.nome}")
+                self.stdout.write(f"    Caixa: R$ {r['aporte']}")
+
+            for vend_username in r["vendedores"]:
+                vendedor = usuarios_map.get(vend_username)
+                if vendedor:
+                    VendedorRota.objects.get_or_create(vendedor=vendedor, rota=rota)
+                    self.stdout.write(f"    Vendedor: {vend_username}")
+
+        # ── 4. Clientes ──────────────────────────────────────────────────────
+        self.stdout.write("\n[4/6] Criando clientes...")
+        clientes_map = {}
+
+        for rota_nome, lista_clientes in CLIENTES.items():
+            rota = rotas_map[rota_nome]
+            for c in lista_clientes:
+                cliente, _ = Cliente.objects.get_or_create(
+                    cpf=c["cpf"],
                     defaults={
-                        "taxa_juros_padrao": r["taxa"],
-                        "periodicidade_padrao": r["periodicidade"],
-                        "num_parcelas_padrao": r["parcelas"],
-                        "limite_emprestimo_max": Decimal("5000.00"),
+                        "empresa": empresa,
+                        "rota": rota,
+                        "nome": c["nome"],
+                        "telefone": c["telefone"],
+                        "endereco": c["endereco"],
+                        "bairro": c["bairro"],
+                        "cidade": c["cidade"],
+                        "uf": c["uf"],
+                        "latitude": Decimal(str(c["lat"])),
+                        "longitude": Decimal(str(c["lng"])),
                     },
                 )
+                clientes_map[cliente.nome] = cliente
 
-                caixa, _ = CaixaRota.objects.get_or_create(rota=rota)
+        self.stdout.write(f"  + {len(clientes_map)} clientes (Teresina: 15, Picos: 12)")
 
-                # aporte inicial de capital
-                gerente = Usuario.objects.filter(empresa=empresa, perfil="gerente").first()
-                if caixa.saldo == 0:
-                    _movimentar_aporte(caixa, 10000, gerente,
-                                       descricao="Capital inicial da rota")
-                    self.stdout.write(f"    → Caixa aberto com R$ 10.000,00")
-
-                # vincular vendedores
-                for vend_username in r["vendedores"]:
-                    vendedor = usuarios_map.get(vend_username)
-                    if vendedor:
-                        VendedorRota.objects.get_or_create(vendedor=vendedor, rota=rota)
-                        self.stdout.write(f"    → Vendedor vinculado: {vend_username}")
-
-        # ── 4. Clientes ───────────────────────────────────────────────────────
-        self.stdout.write("\n[3/6] Criando clientes...")
-        clientes_map = {}  # nome → objeto Cliente
-
-        for emp_data in EMPRESAS:
-            empresa = Empresa.objects.get(cnpj=emp_data["cnpj"])
-            for r in ROTAS[empresa.nome]:
-                rota = rotas_map[r["nome"]]
-                for c in CLIENTES_POR_ROTA.get(rota.nome, []):
-                    cliente, _ = Cliente.objects.get_or_create(
-                        cpf=c["cpf"],
-                        defaults={**c, "empresa": empresa, "rota": rota},
-                    )
-                    clientes_map[cliente.nome] = cliente
-        self.stdout.write(f"  → {len(clientes_map)} clientes criados")
-
-        # ── 5. Empréstimos (signals geram parcelas + movimentação) ────────────
-        self.stdout.write("\n[4/6] Criando empréstimos...")
+        # ── 5. Emprestimos ───────────────────────────────────────────────────
+        self.stdout.write("\n[5/6] Criando emprestimos e parcelas...")
         total_emp = 0
 
-        for emp_data in EMPRESAS:
-            empresa = Empresa.objects.get(cnpj=emp_data["cnpj"])
-            for r_data in ROTAS[empresa.nome]:
-                rota = rotas_map[r_data["nome"]]
-                config = ConfiguracaoRota.objects.get(rota=rota)
-                vendedor = VendedorRota.objects.filter(rota=rota).first().vendedor
+        for rota_data in ROTAS:
+            rota = rotas_map[rota_data["nome"]]
+            config = ConfiguracaoRota.objects.get(rota=rota)
+            vr = VendedorRota.objects.filter(rota=rota).first()
+            vendedor = vr.vendedor
 
-                for c_data in CLIENTES_POR_ROTA.get(rota.nome, []):
-                    cliente = clientes_map[c_data["nome"]]
-                    emprestimos_def = EMPRESTIMOS_POR_CLIENTE.get(cliente.nome, [])
+            for c_data in CLIENTES.get(rota.nome, []):
+                cliente = clientes_map[c_data["nome"]]
+                emprestimos_def = EMPRESTIMOS.get(cliente.nome, [])
 
-                    for idx, (valor, status, pagas, dias_atraso) in enumerate(emprestimos_def):
+                for valor, status, pagas, dias_inicio in emprestimos_def:
+                    criado_ha = hoje - timedelta(days=dias_inicio)
+
+                    # Primeiro vencimento = dia seguinte a criacao (diario)
+                    primeiro_venc = criado_ha + timedelta(days=1)
+
+                    emp = Emprestimo(
+                        cliente=cliente,
+                        rota=rota,
+                        vendedor=vendedor,
+                        valor_principal=Decimal(str(valor)),
+                        taxa_juros=config.taxa_juros_padrao,
+                        num_parcelas=config.num_parcelas_padrao,
+                        periodicidade=config.periodicidade_padrao,
+                        data_primeiro_vencimento=primeiro_venc,
+                        status="ativo",  # sera ajustado depois
+                    )
+                    emp.save()  # signal gera parcelas + saida caixa
+
+                    # ── Atualizar parcelas e criar pagamentos ─────────��──
+                    parcelas = list(emp.parcelas.order_by("numero"))
+
+                    for parcela in parcelas:
+                        i = parcela.numero
+                        venc = parcela.vencimento
+
                         if status == "quitado":
-                            criado_ha = hoje - timedelta(days=90 + idx * 30)
-                        elif status == "inadimplente":
-                            criado_ha = hoje - timedelta(days=60 + dias_atraso)
+                            novo_status = "paga"
+                        elif i <= pagas:
+                            novo_status = "paga"
+                        elif status == "inadimplente" and venc < hoje:
+                            novo_status = "atrasada"
+                        elif venc < hoje and i > pagas:
+                            # parcelas vencidas nao pagas em emprestimo ativo
+                            # algumas podem estar atrasadas para dar realismo
+                            novo_status = "pendente"
                         else:
-                            criado_ha = hoje - timedelta(days=30 + idx * 15)
+                            novo_status = "pendente"
 
-                        primeiro_venc = criado_ha + timedelta(days={
-                            "diario": 1, "semanal": 7, "quinzenal": 15, "mensal": 30,
-                        }.get(config.periodicidade_padrao, 30))
-
-                        # save() calcula valor_total/valor_parcela
-                        # signals geram parcelas (pendente) + saída no caixa
-                        emp = Emprestimo(
-                            cliente=cliente,
-                            rota=rota,
-                            vendedor=vendedor,
-                            valor_principal=Decimal(str(valor)),
-                            taxa_juros=config.taxa_juros_padrao,
-                            num_parcelas=config.num_parcelas_padrao,
-                            periodicidade=config.periodicidade_padrao,
-                            data_primeiro_vencimento=primeiro_venc,
-                            status=status,
-                        )
-                        emp.save()
-
-                        # Atualizar status das parcelas geradas pelo signal
-                        parcelas = list(emp.parcelas.order_by("numero"))
-                        for parcela in parcelas:
-                            i = parcela.numero
-                            venc = parcela.vencimento
-
-                            if status == "quitado":
-                                novo_status = "paga"
-                            elif i <= pagas:
-                                novo_status = "paga"
-                            elif dias_atraso > 0 and i == pagas + 1:
-                                novo_status = "atrasada"
-                            elif venc < hoje:
-                                novo_status = "atrasada" if status == "inadimplente" else "pendente"
-                            else:
-                                novo_status = "pendente"
-
-                            if novo_status != "pendente":
-                                parcela.status = novo_status
-                                if novo_status == "paga":
-                                    parcela.pago_em = timezone.make_aware(
-                                        timezone.datetime.combine(
-                                            venc + timedelta(days=1),
-                                            timezone.datetime.min.time(),
-                                        )
+                        if novo_status != "pendente":
+                            parcela.status = novo_status
+                            if novo_status == "paga":
+                                # pago no dia do vencimento ou 1 dia depois
+                                dia_pgto = venc + timedelta(days=random.choice([0, 0, 0, 1]))
+                                parcela.pago_em = timezone.make_aware(
+                                    timezone.datetime.combine(
+                                        dia_pgto,
+                                        timezone.datetime.min.time().replace(
+                                            hour=random.randint(7, 17),
+                                            minute=random.randint(0, 59),
+                                        ),
                                     )
-                                parcela.save(update_fields=["status", "pago_em"])
-
-                        # ── 6. Pagamentos (signal registra entrada no caixa) ──
-                        for parcela in parcelas:
-                            if parcela.status == "paga":
-                                Pagamento.objects.create(
-                                    parcela=parcela,
-                                    recebido_por=vendedor,
-                                    valor=parcela.valor,
-                                    forma="dinheiro",
                                 )
+                            parcela.save(update_fields=["status", "pago_em"])
 
-                        total_emp += 1
+                    # Criar pagamentos para parcelas pagas (signal registra entrada caixa)
+                    for parcela in parcelas:
+                        if parcela.status == "paga":
+                            Pagamento.objects.create(
+                                parcela=parcela,
+                                recebido_por=vendedor,
+                                valor=parcela.valor,
+                                forma=random.choice(formas_pagamento),
+                            )
 
-        self.stdout.write(f"  → {total_emp} empréstimos criados")
+                    # Atualizar status final do emprestimo
+                    if status != "ativo":
+                        emp.status = status
+                        emp.save(update_fields=["status"])
 
-        # ── Resumo final ──────────────────────────────────────────────────────
-        self.stdout.write("\n" + "─" * 54)
+                    total_emp += 1
+
+        self.stdout.write(f"  + {total_emp} emprestimos criados")
+
+        # ── 6. Resumo ────────────────────────────────────────────────────────
+        n_empresas = Empresa.objects.count()
+        n_usuarios = Usuario.objects.filter(is_superuser=False).count()
+        n_rotas = Rota.objects.count()
+        n_clientes = Cliente.objects.count()
+        n_emprestimos = Emprestimo.objects.count()
+        n_parcelas = Parcela.objects.count()
+        n_pagamentos = Pagamento.objects.count()
+        n_movimentacoes = MovimentacaoFinanceira.objects.count()
+
+        n_ativos = Emprestimo.objects.filter(status="ativo").count()
+        n_quitados = Emprestimo.objects.filter(status="quitado").count()
+        n_inadimplentes = Emprestimo.objects.filter(status="inadimplente").count()
+        n_pagas = Parcela.objects.filter(status="paga").count()
+        n_atrasadas = Parcela.objects.filter(status="atrasada").count()
+        n_pendentes = Parcela.objects.filter(status="pendente").count()
+
+        self.stdout.write("\n" + "=" * 58)
         self.stdout.write(self.style.SUCCESS("  BANCO POPULADO COM SUCESSO"))
-        self.stdout.write("─" * 54)
-        self.stdout.write(f"  Empresas:       {Empresa.objects.count()}")
-        self.stdout.write(f"  Usuários:       {Usuario.objects.filter(is_superuser=False).count()}")
-        self.stdout.write(f"  Rotas:          {Rota.objects.count()}")
-        self.stdout.write(f"  Clientes:       {Cliente.objects.count()}")
-        self.stdout.write(f"  Empréstimos:    {Emprestimo.objects.count()}")
-        self.stdout.write(f"  Parcelas:       {Parcela.objects.count()}")
-        self.stdout.write(f"  Pagamentos:     {Pagamento.objects.count()}")
-        self.stdout.write(f"  Movimentações:  {MovimentacaoFinanceira.objects.count()}")
+        self.stdout.write("=" * 58)
+        self.stdout.write(f"  Empresa:        {n_empresas} (EasyCred Piaui)")
+        self.stdout.write(f"  Usuarios:       {n_usuarios}")
+        self.stdout.write(f"  Rotas:          {n_rotas} (Teresina + Picos)")
+        self.stdout.write(f"  Clientes:       {n_clientes}")
+        self.stdout.write(f"  Emprestimos:    {n_emprestimos} (ativos: {n_ativos}, quitados: {n_quitados}, inadimp: {n_inadimplentes})")
+        self.stdout.write(f"  Parcelas:       {n_parcelas} (pagas: {n_pagas}, atrasadas: {n_atrasadas}, pendentes: {n_pendentes})")
+        self.stdout.write(f"  Pagamentos:     {n_pagamentos}")
+        self.stdout.write(f"  Movimentacoes:  {n_movimentacoes}")
+        self.stdout.write("")
+
+        for rota_data in ROTAS:
+            rota = rotas_map[rota_data["nome"]]
+            caixa = CaixaRota.objects.get(rota=rota)
+            self.stdout.write(f"  Caixa {rota.nome}: R$ {caixa.saldo:.2f}")
+
         self.stdout.write("")
         self.stdout.write("  CREDENCIAIS DE ACESSO")
-        self.stdout.write("  ┌──────────────────────┬──────────────┬────────────┐")
-        self.stdout.write("  │ Usuário              │ Perfil       │ Senha      │")
-        self.stdout.write("  ├──────────────────────┼──────────────┼────────────┤")
-        self.stdout.write("  │ admin                │ Superuser    │ admin123   │")
-        self.stdout.write("  │ admin_cf             │ Admin SaaS   │ admin123   │")
-        self.stdout.write("  │ gerente_cf           │ Gerente      │ gerente123 │")
-        self.stdout.write("  │ vendedor_cf1         │ Vendedor     │ vend123    │")
-        self.stdout.write("  │ vendedor_cf2         │ Vendedor     │ vend123    │")
-        self.stdout.write("  │ admin_fc             │ Admin SaaS   │ admin123   │")
-        self.stdout.write("  │ gerente_fc           │ Gerente      │ gerente123 │")
-        self.stdout.write("  │ vendedor_fc1         │ Vendedor     │ vend123    │")
-        self.stdout.write("  │ vendedor_fc2         │ Vendedor     │ vend123    │")
-        self.stdout.write("  └──────────────────────┴──────────────┴────────────┘")
-        self.stdout.write("─" * 54 + "\n")
+        self.stdout.write("  " + "-" * 50)
+        self.stdout.write(f"  {'Usuario':<16} {'Perfil':<14} {'Senha':<12}")
+        self.stdout.write("  " + "-" * 50)
+        self.stdout.write(f"  {'admin':<16} {'Superuser':<14} {'admin123':<12}")
+        self.stdout.write(f"  {'admin1':<16} {'Admin SaaS':<14} {'admin123':<12}")
+        self.stdout.write(f"  {'gerente1':<16} {'Gerente':<14} {'gerente123':<12}")
+        self.stdout.write(f"  {'vendedor1':<16} {'Vendedor (THE)':<14} {'vend123':<12}")
+        self.stdout.write(f"  {'vendedor2':<16} {'Vendedor (PIC)':<14} {'vend123':<12}")
+        self.stdout.write("  " + "-" * 50)
+        self.stdout.write("=" * 58 + "\n")
