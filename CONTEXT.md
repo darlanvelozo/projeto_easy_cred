@@ -74,7 +74,7 @@ systempaytec/
 - [x] Settings: `pt-br`, `America/Sao_Paulo`
 
 ### Pendente / Próximos Passos
-- [ ] `admin.py` — registrar todos os models no painel Django Admin
+- [x] `admin.py` — registrar todos os models no painel Django Admin
 - [ ] Signal `post_save` no `Emprestimo` para gerar parcelas automaticamente
 - [ ] Signal/service para atualizar `CaixaRota` ao registrar `Pagamento`
 - [ ] Views e templates (interface do usuário)
