@@ -6,6 +6,13 @@
 
 ## Visão Geral
 
+### As 3 Visões do Sistema
+| Visão | Quem | Acesso |
+|---|---|---|
+| **Admin Geral** | Dono/operador do SystemPay | Django `/admin/` — gestão de todas as empresas |
+| **Admin SaaS** | Empresa cliente que contratou | Dashboard próprio: rotas, vendedores, relatórios |
+| **Vendedor** | Trabalhador de campo | Dashboard simplificado: rota, clientes, empréstimos, cobranças |
+
 Sistema SaaS de gestão de crédito rotativo (agiotagem formalizada / crédito popular) operado por empresas que possuem **rotas de cobrança**. Vendedores percorrem rotas, concedem empréstimos a clientes e coletam parcelas.
 
 ---
@@ -77,9 +84,12 @@ systempaytec/
 - [x] `admin.py` — registrar todos os models no painel Django Admin
 - [ ] Signal `post_save` no `Emprestimo` para gerar parcelas automaticamente
 - [ ] Signal/service para atualizar `CaixaRota` ao registrar `Pagamento`
-- [ ] Views e templates (interface do usuário)
-- [ ] Autenticação: login, logout, troca de senha
-- [ ] Controle de permissões por perfil (admin/gerente/vendedor)
+- [x] Autenticação: login e logout implementados
+- [x] Página de login SystemPay (layout split, toggle senha, mensagens de erro)
+- [x] Redirecionamento por perfil após login (superuser→/admin/, admin/gerente/vendedor→dashboard próprio)
+- [ ] Dashboards de cada perfil (admin, gerente, vendedor)
+- [ ] Controle de permissões por perfil (decorators/mixins)
+- [ ] Recuperação de senha
 - [ ] Relatórios: inadimplência, fluxo de caixa, carteira por rota
 
 ---
