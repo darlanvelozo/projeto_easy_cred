@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Registrar Pagamento{% endblock %}
+{% block nav_emprestimos %}active{% endblock %}
+{% block page_title %}Registrar Pagamento{% endblock %}
+{% block page_sub %}{{ parcela.emprestimo.cliente.nome }} — Parcela {{ parcela.numero }}/{{ parcela.emprestimo.num_parcelas }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .pay-summary {
+    background: var(--page-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
+    padding: 1.25rem; margin-bottom: 1.25rem;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+  }
+  .pay-item-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+  .pay-item-value { font-size: 1.1rem; font-weight: 700; margin-top: .2rem; }
+  .form-group { display: flex; flex-direction: column; gap: .3rem; margin-bottom: 1rem; }
+  .form-group label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
+    font-size: .875rem; font-family: inherit; background: #fff; transition: border-color .15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem 1.25rem; border-radius: 8px; font-size: .875rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .errorlist { list-style: none; padding: 0; margin: .2rem 0 0; }
+  .errorlist li { font-size: .75rem; color: var(--red); }
+  @media (max-width: 480px) { .pay-summary { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Resumo da parcela -->
+<div class="pay-summary">
+  <div>
+    <div class="pay-item-label">Cliente</div>
+    <div class="pay-item-value">{{ parcela.emprestimo.cliente.nome }}</div>
+  </div>
+  <div>
+    <div class="pay-item-label">Parcela</div>
+    <div class="pay-item-value">{{ parcela.numero }}/{{ parcela.emprestimo.num_parcelas }}</div>
+  </div>
+  <div>
+    <div class="pay-item-label">Valor da Parcela</div>
+    <div class="pay-item-value" style="color:var(--green)">R$ {{ parcela.valor|floatformat:2 }}</div>
+  </div>
+  <div>
+    <div class="pay-item-label">Vencimento</div>
+    <div class="pay-item-value">{{ parcela.vencimento|date:"d/m/Y" }}</div>
+  </div>
+  <div>
+    <div class="pay-item-label">Rota</div>
+    <div class="pay-item-value">{{ parcela.emprestimo.rota.nome }}</div>
+  </div>
+  <div>
+    <div class="pay-item-label">Status</div>
+    <div class="pay-item-value">
+      {% if parcela.status == 'atrasada' %}<span class="badge badge-red">Atrasada</span>
+      {% else %}<span class="badge badge-yellow">Pendente</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Formulário -->
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_valor">Valor recebido (R$) *</label>
+        {{ form.valor }}
+        {{ form.valor.errors }}
+      </div>
+      <div class="form-group">
+        <label for="id_forma">Forma de pagamento *</label>
+        {{ form.forma }}
+        {{ form.forma.errors }}
+      </div>
+      <div class="form-group">
+        <label for="id_observacao">Observação</label>
+        {{ form.observacao }}
+        {{ form.observacao.errors }}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-green">Confirmar Pagamento</button>
+        <a href="{% url 'emprestimos:detalhe' parcela.emprestimo.pk %}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

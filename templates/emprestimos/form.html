@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block nav_emprestimos %}active{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+{% block page_sub %}Preencha os dados do empréstimo{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; }
+  .form-group { display: flex; flex-direction: column; gap: .3rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
+    font-size: .875rem; font-family: inherit; background: #fff; transition: border-color .15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem 1.25rem; border-radius: 8px; font-size: .875rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: var(--green); color: #fff; }
+  .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .errorlist { list-style: none; padding: 0; margin: .2rem 0 0; }
+  .errorlist li { font-size: .75rem; color: var(--red); }
+  .preview-box {
+    background: var(--page-bg); border: 1px solid var(--card-border); border-radius: 8px;
+    padding: 1rem; margin-top: .5rem;
+  }
+  .preview-row { display: flex; justify-content: space-between; font-size: .85rem; padding: .2rem 0; }
+  .preview-row .label { color: var(--text-muted); }
+  .preview-row .value { font-weight: 700; }
+  @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="id_cliente">Cliente *</label>
+          {{ form.cliente }}
+          {{ form.cliente.errors }}
+        </div>
+        <div class="form-group">
+          <label for="id_rota">Rota *</label>
+          {{ form.rota }}
+          {{ form.rota.errors }}
+        </div>
+        {% if form.vendedor.is_hidden %}
+          {{ form.vendedor }}
+        {% else %}
+        <div class="form-group">
+          <label for="id_vendedor">Vendedor *</label>
+          {{ form.vendedor }}
+          {{ form.vendedor.errors }}
+        </div>
+        {% endif %}
+        <div class="form-group">
+          <label for="id_valor_principal">Valor Principal (R$) *</label>
+          {{ form.valor_principal }}
+          {{ form.valor_principal.errors }}
+        </div>
+        <div class="form-group">
+          <label for="id_taxa_juros">Taxa de Juros (%) *</label>
+          {{ form.taxa_juros }}
+          {{ form.taxa_juros.errors }}
+        </div>
+        <div class="form-group">
+          <label for="id_num_parcelas">Parcelas *</label>
+          {{ form.num_parcelas }}
+          {{ form.num_parcelas.errors }}
+        </div>
+        <div class="form-group">
+          <label for="id_periodicidade">Periodicidade *</label>
+          {{ form.periodicidade }}
+          {{ form.periodicidade.errors }}
+        </div>
+        <div class="form-group">
+          <label for="id_data_primeiro_vencimento">1.o Vencimento *</label>
+          {{ form.data_primeiro_vencimento }}
+          {{ form.data_primeiro_vencimento.errors }}
+        </div>
+        <div class="form-group full">
+          <label for="id_observacao">Observação</label>
+          {{ form.observacao }}
+        </div>
+      </div>
+
+      <!-- Prévia do cálculo -->
+      <div class="preview-box" id="preview" style="display:none">
+        <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:.5rem;text-transform:uppercase">Prévia do empréstimo</div>
+        <div class="preview-row"><span class="label">Valor Total (c/ juros)</span><span class="value" id="prev-total">—</span></div>
+        <div class="preview-row"><span class="label">Valor da Parcela</span><span class="value" id="prev-parcela">—</span></div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Criar Empréstimo</button>
+        <a href="{% url 'emprestimos:lista' %}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const vp = document.getElementById('id_valor_principal');
+  const tj = document.getElementById('id_taxa_juros');
+  const np = document.getElementById('id_num_parcelas');
+  const prev = document.getElementById('preview');
+  const pTotal = document.getElementById('prev-total');
+  const pParc = document.getElementById('prev-parcela');
+
+  function calc(){
+    const v = parseFloat(vp.value)||0;
+    const t = parseFloat(tj.value)||0;
+    const n = parseInt(np.value)||0;
+    if(v>0 && n>0){
+      const total = v*(1+t/100);
+      const parc = total/n;
+      pTotal.textContent = 'R$ '+total.toFixed(2);
+      pParc.textContent = 'R$ '+parc.toFixed(2);
+      prev.style.display='block';
+    } else {
+      prev.style.display='none';
+    }
+  }
+
+  [vp,tj,np].forEach(el=>{if(el)el.addEventListener('input',calc)});
+  calc();
+})();
+</script>
+{% endblock %}

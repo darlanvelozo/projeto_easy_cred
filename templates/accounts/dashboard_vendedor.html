@@ -113,7 +113,7 @@
       </div>
       <div style="text-align:right">
         <div class="parcela-valor">R$ {{ p.valor|floatformat:2 }}</div>
-        <a href="#" class="parcela-btn">Registrar Pagamento</a>
+        <a href="{% url 'financeiro:registrar_pagamento' p.pk %}" class="parcela-btn">Registrar Pagamento</a>
       </div>
     </div>
     {% empty %}

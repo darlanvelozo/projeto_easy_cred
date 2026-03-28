@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Caixa{% endblock %}
+{% block nav_caixa %}active{% endblock %}
+{% block page_title %}Caixa{% endblock %}
+{% block page_sub %}Saldo consolidado das rotas{% endblock %}
+
+{% block extra_head %}
+<style>
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 6px; font-size: .75rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Rota</th>
+          <th>Saldo Atual</th>
+          <th>Atualizado em</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rota in rotas %}
+        <tr>
+          <td style="font-weight:500">{{ rota.nome }}</td>
+          <td style="font-weight:700;color:{% if rota.caixa and rota.caixa.saldo >= 0 %}var(--green){% else %}var(--red){% endif %}">
+            {% if rota.caixa %}R$ {{ rota.caixa.saldo|floatformat:2 }}{% else %}R$ 0,00{% endif %}
+          </td>
+          <td class="td-muted">
+            {% if rota.caixa %}{{ rota.caixa.atualizado_em|date:"d/m/Y H:i" }}{% else %}—{% endif %}
+          </td>
+          <td>
+            <a href="{% url 'financeiro:caixa_movimentacoes' rota.pk %}" class="btn btn-outline">Ver movimentações</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhuma rota cadastrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

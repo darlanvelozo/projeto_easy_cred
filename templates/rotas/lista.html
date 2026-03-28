@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Rotas{% endblock %}
+{% block nav_rotas %}active{% endblock %}
+{% block page_title %}Rotas{% endblock %}
+{% block page_sub %}Rotas da {{ request.user.empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Rotas cadastradas</div>
+      <div class="card-sub">{{ rotas|length }} rota{{ rotas|length|pluralize:"s" }}</div>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Vendedores</th>
+          <th>Clientes</th>
+          <th>Emprést. Ativos</th>
+          <th>Configuração</th>
+          <th>Saldo Caixa</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rota in rotas %}
+        <tr>
+          <td style="font-weight:600">{{ rota.nome }}</td>
+          <td style="text-align:center">{{ rota.total_vendedores }}</td>
+          <td style="text-align:center">{{ rota.total_clientes }}</td>
+          <td style="text-align:center">{{ rota.total_emprestimos }}</td>
+          <td class="td-muted">
+            {% if rota.configuracao %}
+              {{ rota.configuracao.get_periodicidade_padrao_display }} · {{ rota.configuracao.taxa_juros_padrao }}% · {{ rota.configuracao.num_parcelas_padrao }}x
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td style="font-weight:600;color:var(--green)">
+            {% if rota.caixa %}R$ {{ rota.caixa.saldo|floatformat:2 }}{% else %}R$ 0,00{% endif %}
+          </td>
+          <td>
+            {% if rota.ativa %}
+            <span class="badge badge-green">Ativa</span>
+            {% else %}
+            <span class="badge badge-gray">Inativa</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhuma rota cadastrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

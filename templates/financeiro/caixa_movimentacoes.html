@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Movimentações — {{ rota.nome }}{% endblock %}
+{% block nav_caixa %}active{% endblock %}
+{% block page_title %}{{ rota.nome }}{% endblock %}
+{% block page_sub %}Movimentações financeiras{% endblock %}
+
+{% block extra_head %}
+<style>
+  .saldo-card {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
+    padding: 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;
+  }
+  .saldo-label { font-size: .78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+  .saldo-value { font-size: 1.6rem; font-weight: 800; }
+  .back-link { display: inline-flex; align-items: center; gap: .3rem; font-size: .85rem; color: var(--text-muted); text-decoration: none; margin-bottom: 1rem; }
+  .back-link:hover { color: var(--blue); }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: 1.25rem; }
+  .pagination a, .pagination span { padding: .4rem .75rem; border-radius: 6px; font-size: .8rem; text-decoration: none; color: var(--text-secondary); border: 1px solid var(--card-border); }
+  .pagination .current { background: var(--blue); color: #fff; border-color: var(--blue); }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'financeiro:caixa_lista' %}" class="back-link">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+  Voltar para caixas
+</a>
+
+<div class="saldo-card">
+  <div>
+    <div class="saldo-label">Saldo atual</div>
+    <div class="saldo-value" style="color:{% if caixa.saldo >= 0 %}var(--green){% else %}var(--red){% endif %}">
+      R$ {{ caixa.saldo|floatformat:2 }}
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div class="saldo-label">Atualizado em</div>
+    <div style="font-size:.9rem;font-weight:500;margin-top:.2rem">{{ caixa.atualizado_em|date:"d/m/Y H:i" }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Tipo</th>
+          <th>Origem</th>
+          <th>Valor</th>
+          <th>Saldo Anterior</th>
+          <th>Saldo Posterior</th>
+          <th>Descrição</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in page %}
+        <tr>
+          <td class="td-muted">{{ m.criado_em|date:"d/m/Y H:i" }}</td>
+          <td>
+            {% if m.tipo == 'entrada' %}<span class="badge badge-green">Entrada</span>
+            {% else %}<span class="badge badge-red">Saída</span>{% endif %}
+          </td>
+          <td class="td-muted">{{ m.get_origem_display }}</td>
+          <td style="font-weight:600;color:{% if m.tipo == 'entrada' %}var(--green){% else %}var(--red){% endif %}">
+            {% if m.tipo == 'entrada' %}+{% else %}-{% endif %} R$ {{ m.valor|floatformat:2 }}
+          </td>
+          <td class="td-muted">R$ {{ m.saldo_anterior|floatformat:2 }}</td>
+          <td style="font-weight:500">R$ {{ m.saldo_posterior|floatformat:2 }}</td>
+          <td class="td-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.descricao|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhuma movimentação.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if page.has_other_pages %}
+<div class="pagination">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}">Anterior</a>
+  {% endif %}
+  {% for num in page.paginator.page_range %}
+    {% if page.number == num %}
+    <span class="current">{{ num }}</span>
+    {% elif num > page.number|add:"-3" and num < page.number|add:"3" %}
+    <a href="?page={{ num }}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}">Próxima</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

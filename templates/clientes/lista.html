@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block nav_clientes %}active{% endblock %}
+{% block page_title %}Clientes{% endblock %}
+{% block page_sub %}{{ total }} cliente{{ total|pluralize:"s" }} encontrado{{ total|pluralize:"s" }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .filter-bar {
+    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .filter-bar input, .filter-bar select {
+    padding: .5rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
+    font-size: .85rem; font-family: inherit; background: #fff;
+  }
+  .filter-bar input { flex: 1; min-width: 200px; }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; border-radius: 8px; font-size: .85rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-sm { padding: .3rem .6rem; font-size: .75rem; }
+  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: 1.25rem; }
+  .pagination a, .pagination span { padding: .4rem .75rem; border-radius: 6px; font-size: .8rem; text-decoration: none; color: var(--text-secondary); border: 1px solid var(--card-border); }
+  .pagination .current { background: var(--blue); color: #fff; border-color: var(--blue); }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros -->
+<form class="filter-bar" method="get">
+  <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nome...">
+  <select name="rota" onchange="this.form.submit()">
+    <option value="">Todas as rotas</option>
+    {% for r in rotas %}
+    <option value="{{ r.id }}" {% if rota_filtro == r.id|stringformat:"d" %}selected{% endif %}>{{ r.nome }}</option>
+    {% endfor %}
+  </select>
+  <select name="status" onchange="this.form.submit()">
+    <option value="">Todos</option>
+    <option value="ativo" {% if status_filtro == "ativo" %}selected{% endif %}>Ativos</option>
+    <option value="inativo" {% if status_filtro == "inativo" %}selected{% endif %}>Inativos</option>
+  </select>
+  <button type="submit" class="btn btn-outline">Buscar</button>
+  {% if request.user.perfil == 'admin' or request.user.perfil == 'gerente' %}
+  <a href="{% url 'clientes:criar' %}" class="btn btn-primary">+ Novo Cliente</a>
+  {% endif %}
+</form>
+
+<!-- Tabela -->
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>CPF</th>
+          <th>Telefone</th>
+          <th>Rota</th>
+          <th>Cidade</th>
+          <th>Status</th>
+          {% if request.user.perfil != 'vendedor' %}
+          <th>Ações</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in page %}
+        <tr>
+          <td style="font-weight:500">{{ c.nome }}</td>
+          <td class="td-muted">{{ c.cpf|default:"—" }}</td>
+          <td class="td-muted">{{ c.telefone|default:"—" }}</td>
+          <td class="td-muted">{{ c.rota.nome|default:"—" }}</td>
+          <td class="td-muted">{% if c.cidade %}{{ c.cidade }}/{{ c.uf }}{% else %}—{% endif %}</td>
+          <td>
+            {% if c.ativo %}
+            <span class="badge badge-green">Ativo</span>
+            {% else %}
+            <span class="badge badge-gray">Inativo</span>
+            {% endif %}
+          </td>
+          {% if request.user.perfil != 'vendedor' %}
+          <td>
+            <a href="{% url 'clientes:editar' c.pk %}" class="btn btn-sm btn-outline">Editar</a>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum cliente encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Paginação -->
+{% if page.has_other_pages %}
+<div class="pagination">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}&q={{ q }}&rota={{ rota_filtro }}&status={{ status_filtro }}">Anterior</a>
+  {% endif %}
+  {% for num in page.paginator.page_range %}
+    {% if page.number == num %}
+    <span class="current">{{ num }}</span>
+    {% elif num > page.number|add:"-3" and num < page.number|add:"3" %}
+    <a href="?page={{ num }}&q={{ q }}&rota={{ rota_filtro }}&status={{ status_filtro }}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}&q={{ q }}&rota={{ rota_filtro }}&status={{ status_filtro }}">Próxima</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Empréstimos{% endblock %}
+{% block nav_emprestimos %}active{% endblock %}
+{% block page_title %}Empréstimos{% endblock %}
+{% block page_sub %}{{ total }} empréstimo{{ total|pluralize:"s" }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .filter-bar {
+    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .filter-bar input, .filter-bar select {
+    padding: .5rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
+    font-size: .85rem; font-family: inherit; background: #fff;
+  }
+  .filter-bar input { flex: 1; min-width: 200px; }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; border-radius: 8px; font-size: .85rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-sm { padding: .3rem .6rem; font-size: .75rem; }
+  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .btn-green { background: var(--green); color: #fff; }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: 1.25rem; }
+  .pagination a, .pagination span { padding: .4rem .75rem; border-radius: 6px; font-size: .8rem; text-decoration: none; color: var(--text-secondary); border: 1px solid var(--card-border); }
+  .pagination .current { background: var(--blue); color: #fff; border-color: var(--blue); }
+</style>
+{% endblock %}
+
+{% block content %}
+<form class="filter-bar" method="get">
+  <input type="text" name="q" value="{{ q }}" placeholder="Buscar por cliente...">
+  <select name="status" onchange="this.form.submit()">
+    <option value="">Todos os status</option>
+    <option value="ativo" {% if status_filtro == "ativo" %}selected{% endif %}>Ativo</option>
+    <option value="quitado" {% if status_filtro == "quitado" %}selected{% endif %}>Quitado</option>
+    <option value="inadimplente" {% if status_filtro == "inadimplente" %}selected{% endif %}>Inadimplente</option>
+    <option value="cancelado" {% if status_filtro == "cancelado" %}selected{% endif %}>Cancelado</option>
+  </select>
+  <select name="rota" onchange="this.form.submit()">
+    <option value="">Todas as rotas</option>
+    {% for r in rotas %}
+    <option value="{{ r.id }}" {% if rota_filtro == r.id|stringformat:"d" %}selected{% endif %}>{{ r.nome }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-outline">Buscar</button>
+  <a href="{% url 'emprestimos:criar' %}" class="btn btn-green">+ Novo Empréstimo</a>
+</form>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Cliente</th>
+          <th>Rota</th>
+          <th>Principal</th>
+          <th>Total</th>
+          <th>Parcelas</th>
+          <th>Status</th>
+          <th>Data</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in page %}
+        <tr>
+          <td class="td-muted">{{ e.id }}</td>
+          <td style="font-weight:500">{{ e.cliente.nome }}</td>
+          <td class="td-muted">{{ e.rota.nome }}</td>
+          <td>R$ {{ e.valor_principal|floatformat:2 }}</td>
+          <td style="font-weight:600">R$ {{ e.valor_total|floatformat:2 }}</td>
+          <td class="td-muted">{{ e.num_parcelas }}x {{ e.get_periodicidade_display }}</td>
+          <td>
+            {% if e.status == 'ativo' %}<span class="badge badge-green">Ativo</span>
+            {% elif e.status == 'quitado' %}<span class="badge badge-blue">Quitado</span>
+            {% elif e.status == 'inadimplente' %}<span class="badge badge-red">Inadimplente</span>
+            {% else %}<span class="badge badge-gray">Cancelado</span>{% endif %}
+          </td>
+          <td class="td-muted">{{ e.criado_em|date:"d/m/Y" }}</td>
+          <td><a href="{% url 'emprestimos:detalhe' e.pk %}" class="btn btn-sm btn-outline">Ver</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum empréstimo encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if page.has_other_pages %}
+<div class="pagination">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}&q={{ q }}&status={{ status_filtro }}&rota={{ rota_filtro }}">Anterior</a>
+  {% endif %}
+  {% for num in page.paginator.page_range %}
+    {% if page.number == num %}
+    <span class="current">{{ num }}</span>
+    {% elif num > page.number|add:"-3" and num < page.number|add:"3" %}
+    <a href="?page={{ num }}&q={{ q }}&status={{ status_filtro }}&rota={{ rota_filtro }}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}&q={{ q }}&status={{ status_filtro }}&rota={{ rota_filtro }}">Próxima</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

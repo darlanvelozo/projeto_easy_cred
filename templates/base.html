@@ -328,16 +328,39 @@
     .alert-success { background: #dcfce7; border: 1px solid #86efac; color: #16a34a; }
     .alert-info    { background: #dbeafe; border: 1px solid #93c5fd; color: #2563eb; }
 
+    /* ── Botão hamburger ──────────────────────── */
+    .menu-toggle {
+      display: none;
+      width: 36px; height: 36px; border: none; background: none; cursor: pointer;
+      color: var(--text-primary); padding: 0;
+    }
+    .menu-toggle svg { width: 22px; height: 22px; }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+      z-index: 99;
+    }
+    .sidebar-overlay.show { display: block; }
+
     /* ── Responsivo ──────────────────────────── */
     @media (max-width: 768px) {
+      .menu-toggle { display: flex; align-items: center; justify-content: center; }
       .sidebar { transform: translateX(-100%); }
       .sidebar.open { transform: translateX(0); }
       .main { margin-left: 0; }
-      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr 1fr; }
+      .grid-4 { grid-template-columns: 1fr 1fr; }
+      .grid-3, .grid-2 { grid-template-columns: 1fr 1fr; }
+      .two-col { grid-template-columns: 1fr !important; }
+      .topbar { padding: 0 1rem; }
+      .content { padding: 1rem; }
+      .table-wrap { font-size: .8rem; }
+      .table-wrap th, .table-wrap td { padding: .6rem .5rem; }
     }
     @media (max-width: 480px) {
       .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
-      .content { padding: 1rem; }
+      .content { padding: .75rem; }
+      .metric-card { padding: 1rem; }
+      .metric-value { font-size: 1.3rem; }
+      .topbar-date { display: none; }
     }
   </style>
   {% block extra_head %}{% endblock %}
@@ -381,18 +404,18 @@
       </a>
 
       {% if user.perfil == 'admin' or user.perfil == 'gerente' %}
-      <a href="#" class="nav-link {% block nav_rotas %}{% endblock %}">
+      <a href="{% url 'rotas:lista' %}" class="nav-link {% block nav_rotas %}{% endblock %}">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
         Rotas
       </a>
       {% endif %}
 
-      <a href="#" class="nav-link {% block nav_clientes %}{% endblock %}">
+      <a href="{% url 'clientes:lista' %}" class="nav-link {% block nav_clientes %}{% endblock %}">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
         Clientes
       </a>
 
-      <a href="#" class="nav-link {% block nav_emprestimos %}{% endblock %}">
+      <a href="{% url 'emprestimos:lista' %}" class="nav-link {% block nav_emprestimos %}{% endblock %}">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
         Empréstimos
       </a>
@@ -400,7 +423,7 @@
       {% if user.perfil == 'admin' or user.perfil == 'gerente' %}
       <div class="nav-section-label">Financeiro</div>
 
-      <a href="#" class="nav-link {% block nav_caixa %}{% endblock %}">
+      <a href="{% url 'financeiro:caixa_lista' %}" class="nav-link {% block nav_caixa %}{% endblock %}">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
         Caixa
       </a>
@@ -436,11 +459,19 @@
   <!-- ── Área principal ── -->
   <div class="main">
 
+    <!-- Overlay mobile -->
+    <div class="sidebar-overlay" id="overlay" onclick="toggleMenu()"></div>
+
     <!-- Topbar -->
     <header class="topbar">
-      <div class="topbar-left">
-        <span class="topbar-title">{% block page_title %}Dashboard{% endblock %}</span>
-        <span class="topbar-sub">{% block page_sub %}{% endblock %}</span>
+      <div class="topbar-left" style="display:flex;align-items:center;gap:.75rem">
+        <button class="menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+        <div>
+          <span class="topbar-title">{% block page_title %}Dashboard{% endblock %}</span>
+          <span class="topbar-sub">{% block page_sub %}{% endblock %}</span>
+        </div>
       </div>
       <div class="topbar-right">
         <div class="topbar-date">
@@ -470,5 +501,20 @@
 </div>
 
 {% block extra_js %}{% endblock %}
+<script>
+function toggleMenu(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+// Fecha sidebar ao clicar em link (mobile)
+document.querySelectorAll('.nav-link').forEach(function(a){
+  a.addEventListener('click', function(){
+    if(window.innerWidth<=768){
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.remove('show');
+    }
+  });
+});
+</script>
 </body>
 </html>
