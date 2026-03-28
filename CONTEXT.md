@@ -1,60 +1,70 @@
 # EasyCred — Contexto do Projeto
 
-> Arquivo de referência contínua. Atualizado a cada nova implementação ou decisão de negócio.
+> Arquivo de referencia continua. Atualizado a cada nova implementacao ou decisao de negocio.
 
 ---
 
-## Visão Geral
+## Visao Geral
 
-### As 3 Visões do Sistema
-| Visão | Quem | Acesso |
+Sistema SaaS de gestao de credito popular operado por empresas que possuem **rotas de cobranca**. Vendedores percorrem rotas, cadastram clientes, concedem emprestimos e coletam parcelas diariamente.
+
+### As 3 Visoes do Sistema
+| Visao | Quem | Acesso |
 |---|---|---|
-| **Admin Geral** | Dono/operador do SystemPay | Django `/admin/` — gestão de todas as empresas |
-| **Admin SaaS** | Empresa cliente que contratou | Dashboard próprio: rotas, vendedores, relatórios |
-| **Vendedor** | Trabalhador de campo | Dashboard simplificado: rota, clientes, empréstimos, cobranças |
+| **Admin SaaS** | Dono da empresa | Dashboard completo, configuracoes, relatorios, gestao total |
+| **Gerente** | Supervisor de campo | Rotas, vendedores, clientes, emprestimos, caixa, relatorios |
+| **Vendedor** | Trabalhador de campo | Seus clientes, seus emprestimos, cobranças do dia, mapa, GPS |
 
-Sistema SaaS de gestão de crédito rotativo (agiotagem formalizada / crédito popular) operado por empresas que possuem **rotas de cobrança**. Vendedores percorrem rotas, concedem empréstimos a clientes e coletam parcelas.
+### Dados de Demonstracao
+| Usuario | Perfil | Senha | Rota |
+|---|---|---|---|
+| `darlan` | Admin SaaS | `darlan123` | — |
+| `marcos` | Gerente | `marcos123` | — |
+| `raimundo` | Vendedor | `raimundo123` | Teresina |
+| `chico` | Vendedor | `chico123` | Picos |
 
 ---
 
-## Regras de Negócio
+## Regras de Negocio
 
 ### Empresa (Tenant)
-- Cada empresa é um tenant isolado no sistema.
-- Todos os dados (rotas, clientes, empréstimos) pertencem a uma empresa.
-- Usuários são vinculados a uma empresa e só enxergam dados dela.
+- Cada empresa e um tenant isolado no sistema.
+- Todos os dados pertencem a uma empresa. Usuarios so enxergam dados dela.
 
-### Usuários e Perfis
+### Usuarios e Perfis
 | Perfil | Acesso |
 |---|---|
-| `admin` | Acesso total à empresa: configurações, relatórios, todos os dados |
-| `gerente` | Gerencia rotas, vendedores, clientes e relatórios |
-| `vendedor` | Opera na rota: concede empréstimos, registra pagamentos |
+| `admin` | Acesso total: configuracoes, relatorios, todos os dados |
+| `gerente` | Rotas, clientes, emprestimos, caixa, relatorios |
+| `vendedor` | Clientes e emprestimos das suas rotas, cadastro, pagamentos, mapa |
 
 ### Rotas
-- Rota = território/carteira de clientes atribuída a um ou mais vendedores.
-- Cada rota tem uma `ConfiguracaoRota` com taxa padrão, periodicidade e número de parcelas padrão.
-- Cada rota tem um `CaixaRota` com saldo consolidado.
-- Um vendedor pode estar vinculado a múltiplas rotas (`VendedorRota`).
+- Territorio/carteira de clientes atribuida a vendedores.
+- `ConfiguracaoRota`: taxa padrao, periodicidade, parcelas, limite maximo.
+- `CaixaRota`: saldo consolidado (alterado apenas via MovimentacaoFinanceira).
+- Vendedores vinculados via `VendedorRota` (M2M).
 
-### Empréstimos
+### Emprestimos
 - Juros simples: `valor_total = principal * (1 + taxa/100)`.
-- A taxa é **gravada no contrato** no momento da criação — mudanças futuras na configuração da rota não afetam contratos existentes.
-- Parcelas são geradas automaticamente com base em `num_parcelas`, `periodicidade` e `data_primeiro_vencimento`.
-- Periodicidades suportadas: diário, semanal, quinzenal, mensal.
-- Status do empréstimo: `ativo`, `quitado`, `inadimplente`, `cancelado`.
+- Taxa **gravada no contrato** — imutavel apos criacao.
+- Parcelas geradas automaticamente (signal post_save).
+- Periodicidades: diario (mais comum), semanal, quinzenal, mensal.
+- Status: `ativo`, `quitado`, `inadimplente`, `cancelado`.
+- Vendedor nao escolhe data de vencimento — auto-calcula (amanha).
 
 ### Parcelas
-- Geradas automaticamente via signal `post_save` no `Emprestimo` (`emprestimos/signals.py`).
+- Geradas automaticamente via signal.
 - Status: `pendente`, `paga`, `atrasada`.
-- Uma parcela pode ter múltiplos pagamentos (pagamentos parciais).
 
-### Caixa e Movimentações
-- **Regra crítica:** o saldo do `CaixaRota` nunca é alterado diretamente — toda alteração passa obrigatoriamente por uma `MovimentacaoFinanceira`.
-- Isso garante rastreabilidade total e permite reconstruir histórico.
-- Origens de movimentação: `pagamento`, `emprestimo` (saída ao conceder), `aporte`, `retirada`, `ajuste`.
-- Ao registrar um pagamento → cria `Pagamento` → cria `MovimentacaoFinanceira` (entrada) → atualiza saldo do `CaixaRota`.
-- Ao conceder empréstimo → cria `Emprestimo` → cria `MovimentacaoFinanceira` (saída) → atualiza saldo.
+### Caixa e Movimentacoes
+- **Regra critica:** saldo do CaixaRota NUNCA e alterado diretamente.
+- Toda alteracao passa por MovimentacaoFinanceira (rastreabilidade total).
+- Origens: `pagamento`, `emprestimo`, `aporte`, `retirada`, `ajuste`.
+
+### Clientes
+- Possuem latitude/longitude para visualizacao em mapa.
+- GPS capturado pelo celular do vendedor no cadastro.
+- Vendedor cadastra e edita clientes das suas rotas.
 
 ---
 
@@ -62,72 +72,60 @@ Sistema SaaS de gestão de crédito rotativo (agiotagem formalizada / crédito p
 
 ```
 systempaytec/
-├── accounts/       # Empresa + Usuario (AbstractUser)
+├── accounts/       # Empresa, Usuario (AbstractUser), dashboards, config, relatorios
 ├── rotas/          # Rota, ConfiguracaoRota, VendedorRota, CaixaRota
 ├── clientes/       # Cliente, ClienteDocumento
-├── emprestimos/    # Emprestimo, Parcela
-└── financeiro/     # Pagamento, MovimentacaoFinanceira
+├── emprestimos/    # Emprestimo, Parcela + signals (parcelas + saida caixa)
+└── financeiro/     # Pagamento, MovimentacaoFinanceira + signal (entrada caixa)
 ```
 
 ---
 
-## Estado Atual da Implementação
+## Estado Atual da Implementacao
 
-### Concluído
-- [x] Estrutura de todos os apps criada
-- [x] `models.py` de todos os apps implementados
-- [x] `AUTH_USER_MODEL = 'accounts.Usuario'` configurado
-- [x] Migrations geradas e aplicadas (banco limpo)
-- [x] Settings: `pt-br`, `America/Sao_Paulo`
-
-### Pendente / Próximos Passos
-- [x] `admin.py` — registrar todos os models no painel Django Admin
-- [x] Signal `post_save` no `Emprestimo` para gerar parcelas automaticamente (`emprestimos/signals.py`)
-- [x] Signal `post_save` no `Emprestimo` para registrar saída no caixa (`emprestimos/signals.py`)
-- [x] Signal `post_save` no `Pagamento` para registrar entrada no caixa (`financeiro/signals.py`)
-- [x] Autenticação: login e logout implementados
-- [x] Página de login SystemPay (layout split, toggle senha, mensagens de erro)
-- [x] Redirecionamento por perfil após login (superuser→/admin/, admin/gerente/vendedor→dashboard próprio)
-- [x] Base layout (base.html): sidebar escura, topbar, cards, badges, tabelas — reutilizável em todas as telas
-- [x] Dashboard Admin SaaS: 5 métricas + 4 contadores, rotas, últimos empréstimos, inadimplentes, pagamentos hoje
-- [x] Dashboard Gerente: rotas, vendedores, parcelas próximos 7 dias, métricas
-- [x] Dashboard Vendedor: carteira ativa, cobranças hoje, inadimplentes, métricas pessoais
-- [x] Controle de permissões por perfil (`accounts/decorators.py` — `requer_perfil`)
-- [x] `MovimentacaoInline` no admin do Pagamento
-- [x] Guard `ConfiguracaoRota` com `getattr` + `{% if r.config %}` nos templates
-- [x] `popular_banco` atualizado para funcionar com signals (sem duplicações)
-- [x] Navegação sidebar com links reais (sem href="#") e condicional por perfil
-- [x] CRUD Clientes: lista (filtro/paginação), criar, editar, detalhe
-- [x] CRUD Empréstimos: lista (filtro/paginação), criar (signal gera parcelas+caixa), detalhe com parcelas
-- [x] CRUD Rotas: lista (anotações), detalhe (saldo, carteira, inadimplência, vendedores, clientes)
-- [x] Financeiro: registrar pagamento, caixa por rota, movimentações com paginação
-- [x] Relatórios gerenciais: métricas mês, carteira por rota, top inadimplentes
-- [x] Configurações: dados da empresa, rotas/configs, equipe (gerentes/vendedores)
-- [x] Responsividade mobile: hamburger menu, overlay, tabelas adaptadas
-- [x] Guia de utilização do sistema por perfil (GUIA_USUARIO.md)
-- [ ] Recuperação de senha
-- [ ] Gráficos/visualizações nos relatórios
-- [ ] Renegociação de empréstimos
-- [ ] Operações em lote
+### Concluido
+- [x] Models de todos os apps + migrations
+- [x] AUTH_USER_MODEL customizado (AbstractUser)
+- [x] admin.py completo com inlines e filtros
+- [x] Signals: gerar parcelas, saida caixa (emprestimo), entrada caixa (pagamento)
+- [x] Login/logout com redirecionamento por perfil
+- [x] Base layout responsivo: sidebar, topbar, hamburger mobile
+- [x] 3 dashboards (admin, gerente, vendedor) com metricas em tempo real
+- [x] Decorator @requer_perfil para controle de acesso
+- [x] CRUD Clientes: lista, criar, editar, detalhe, mapa (Leaflet/OpenStreetMap)
+- [x] Cadastro de cliente com captura GPS (navigator.geolocation)
+- [x] CRUD Emprestimos: lista, criar (AJAX config rota), detalhe com parcelas
+- [x] Formulario simplificado do vendedor (auto-vencimento, filtro rotas/clientes)
+- [x] Validacao de limite maximo por rota (frontend + backend)
+- [x] Registro de pagamento com quitacao automatica
+- [x] Caixa: saldo por rota + historico de movimentacoes paginado
+- [x] Relatorios: inadimplencia, recebimentos mes, carteira por rota, top inadimplentes
+- [x] Configuracoes editaveis: empresa + config por rota
+- [x] API AJAX para config da rota (pre-preenchimento de formulario)
+- [x] popular_banco com dados realistas do Piaui (Teresina + Picos)
+- [x] 19 templates, 27 clientes, 32 emprestimos de demonstracao
+- [x] Documentacao: CONTEXT.md, REGRAS_E_FUNCIONAMENTO.md, GUIA_USUARIO.md
 
 ---
 
-## Decisões Técnicas
+## Decisoes Tecnicas
 
-| Decisão | Motivo |
+| Decisao | Motivo |
 |---|---|
-| `AbstractUser` customizado desde o início | Evita migração problemática posterior |
-| Taxa gravada no contrato | Imutabilidade histórica dos contratos |
-| `MovimentacaoFinanceira` como única porta de entrada no caixa | Rastreabilidade total |
-| SQLite em desenvolvimento | Simplicidade; migrar para PostgreSQL em produção |
-| `python-dateutil` instalado | Necessário para cálculo de vencimentos com `relativedelta` |
+| AbstractUser customizado | Evita migracao problematica posterior |
+| Taxa gravada no contrato | Imutabilidade historica |
+| MovimentacaoFinanceira como unica porta | Rastreabilidade total do caixa |
+| Signals para automacao | Desacoplamento entre apps |
+| Leaflet/OpenStreetMap para mapa | Gratuito, sem API key |
+| SQLite em dev | Simplicidade; PostgreSQL em producao |
+| python-dateutil | Calculo de vencimentos com relativedelta |
 
 ---
 
 ## Stack
 
-- Python 3.12
-- Django 6.0.3
+- Python 3.12 / Django 6.0.3
 - SQLite (dev) → PostgreSQL (prod)
+- Leaflet + OpenStreetMap (mapa)
 - Ambiente virtual: `/home/darlan/systempay/myenv/`
-- Repositório: https://github.com/darlanvelozo/projeto_easy_cred (branch `master`)
+- Repositorio: https://github.com/darlanvelozo/projeto_easy_cred (branch `master`)
