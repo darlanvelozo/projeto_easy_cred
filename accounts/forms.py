@@ -1,0 +1,41 @@
+from django import forms
+from .models import Empresa
+from rotas.models import ConfiguracaoRota
+
+
+class EmpresaForm(forms.ModelForm):
+    class Meta:
+        model = Empresa
+        fields = ['nome', 'cnpj', 'email', 'telefone']
+        widgets = {
+            'nome': forms.TextInput(attrs={'placeholder': 'Nome da empresa'}),
+            'cnpj': forms.TextInput(attrs={'placeholder': '00.000.000/0000-00'}),
+            'email': forms.EmailInput(attrs={'placeholder': 'email@empresa.com'}),
+            'telefone': forms.TextInput(attrs={'placeholder': '(00) 00000-0000'}),
+        }
+
+
+class ConfiguracaoRotaForm(forms.ModelForm):
+    class Meta:
+        model = ConfiguracaoRota
+        fields = [
+            'taxa_juros_padrao', 'periodicidade_padrao',
+            'num_parcelas_padrao', 'limite_emprestimo_max',
+        ]
+        widgets = {
+            'taxa_juros_padrao': forms.NumberInput(attrs={
+                'step': '0.01', 'min': '0', 'placeholder': '0,00',
+            }),
+            'num_parcelas_padrao': forms.NumberInput(attrs={
+                'min': '1', 'max': '120',
+            }),
+            'limite_emprestimo_max': forms.NumberInput(attrs={
+                'step': '0.01', 'min': '0', 'placeholder': 'Sem limite',
+            }),
+        }
+        labels = {
+            'taxa_juros_padrao': 'Taxa de Juros (%)',
+            'periodicidade_padrao': 'Periodicidade',
+            'num_parcelas_padrao': 'Nº Parcelas',
+            'limite_emprestimo_max': 'Limite Máx. (R$)',
+        }

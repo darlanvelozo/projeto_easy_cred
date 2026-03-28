@@ -1,13 +1,15 @@
 from datetime import timedelta
 from decimal import Decimal
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum
+from django.http import JsonResponse
 from django.utils import timezone
 
 from .decorators import requer_perfil
+from .forms import EmpresaForm, ConfiguracaoRotaForm
 from .models import Usuario
 from rotas.models import Rota, CaixaRota, VendedorRota, ConfiguracaoRota
 from clientes.models import Cliente
@@ -467,9 +469,71 @@ def configuracoes(request):
     vendedores = Usuario.objects.filter(empresa=empresa, perfil='vendedor').order_by('first_name')
     gerentes = Usuario.objects.filter(empresa=empresa, perfil='gerente').order_by('first_name')
 
+    empresa_form = EmpresaForm(instance=empresa)
+
+    # Cria um form para cada rota (existente ou novo)
+    config_forms = []
+    for rota in rotas:
+        config = getattr(rota, 'configuracao', None)
+        prefix = f'config_{rota.pk}'
+        form = ConfiguracaoRotaForm(instance=config, prefix=prefix)
+        config_forms.append({'rota': rota, 'form': form, 'has_config': config is not None})
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+
+        if action == 'salvar_empresa':
+            empresa_form = EmpresaForm(request.POST, instance=empresa)
+            if empresa_form.is_valid():
+                empresa_form.save()
+                messages.success(request, 'Dados da empresa atualizados.')
+                return redirect('accounts:configuracoes')
+
+        elif action.startswith('salvar_config_'):
+            rota_pk = int(action.replace('salvar_config_', ''))
+            rota = get_object_or_404(Rota, pk=rota_pk, empresa=empresa)
+            config = getattr(rota, 'configuracao', None)
+            prefix = f'config_{rota.pk}'
+            form = ConfiguracaoRotaForm(request.POST, instance=config, prefix=prefix)
+            if form.is_valid():
+                obj = form.save(commit=False)
+                obj.rota = rota
+                obj.save()
+                messages.success(request, f'Configuração da rota "{rota.nome}" salva.')
+                return redirect('accounts:configuracoes')
+            # Atualiza o form com erros na lista
+            config_forms = []
+            for r in rotas:
+                cfg = getattr(r, 'configuracao', None)
+                pfx = f'config_{r.pk}'
+                if r.pk == rota_pk:
+                    config_forms.append({'rota': r, 'form': form, 'has_config': cfg is not None})
+                else:
+                    config_forms.append({'rota': r, 'form': ConfiguracaoRotaForm(instance=cfg, prefix=pfx), 'has_config': cfg is not None})
+
     return render(request, 'accounts/configuracoes.html', {
         'empresa': empresa,
+        'empresa_form': empresa_form,
+        'config_forms': config_forms,
         'rotas': rotas,
         'vendedores': vendedores,
         'gerentes': gerentes,
     })
+
+
+# ── API: Config da Rota (AJAX) ──────────────────────────────────────────────
+
+@login_required
+def api_config_rota(request, rota_id):
+    """Retorna a configuração padrão de uma rota em JSON."""
+    empresa = request.user.empresa
+    rota = get_object_or_404(Rota, pk=rota_id, empresa=empresa)
+    config = getattr(rota, 'configuracao', None)
+    if config:
+        return JsonResponse({
+            'taxa_juros': str(config.taxa_juros_padrao),
+            'periodicidade': config.periodicidade_padrao,
+            'num_parcelas': config.num_parcelas_padrao,
+            'limite_max': str(config.limite_emprestimo_max) if config.limite_emprestimo_max else None,
+        })
+    return JsonResponse({'taxa_juros': None, 'periodicidade': None, 'num_parcelas': None, 'limite_max': None})

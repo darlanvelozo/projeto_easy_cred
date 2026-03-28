@@ -2,7 +2,7 @@
 {% block title %}Configurações{% endblock %}
 {% block nav_config %}active{% endblock %}
 {% block page_title %}Configurações{% endblock %}
-{% block page_sub %}Dados da empresa e equipe{% endblock %}
+{% block page_sub %}Dados da empresa, rotas e equipe{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -14,6 +14,36 @@
   .detail-value { font-weight: 600; }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
   @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* Forms */
+  .cfg-form { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem 1rem; }
+  .cfg-form .form-group { display: flex; flex-direction: column; gap: .25rem; }
+  .cfg-form .form-group.full { grid-column: 1 / -1; }
+  .cfg-form label { font-size: .75rem; font-weight: 600; color: var(--text-muted); }
+  .cfg-form input, .cfg-form select {
+    padding: .45rem .65rem; border: 1px solid var(--card-border); border-radius: 6px;
+    font-size: .825rem; font-family: inherit; background: #fff;
+  }
+  .cfg-form input:focus, .cfg-form select:focus {
+    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .85rem; border-radius: 6px; font-size: .8rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-sm { padding: .3rem .6rem; font-size: .75rem; }
+  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .errorlist { list-style: none; padding: 0; margin: .2rem 0 0; }
+  .errorlist li { font-size: .72rem; color: var(--red); }
+
+  .rota-config-card { margin-bottom: 1rem; }
+  .rota-config-header { display: flex; justify-content: space-between; align-items: center; padding: .75rem 1rem; background: var(--page-bg); border-bottom: 1px solid var(--card-border); border-radius: 8px 8px 0 0; }
+  .rota-config-header h3 { font-size: .85rem; font-weight: 600; margin: 0; }
+  .rota-config-body { padding: 1rem; }
+  .config-hint { font-size: .72rem; color: var(--text-muted); margin-top: .5rem; }
+  .badge-info { background: #dbeafe; color: #1e40af; font-size: .7rem; padding: .15rem .5rem; border-radius: 4px; font-weight: 600; }
+
+  @media (max-width: 768px) { .cfg-form { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
@@ -22,63 +52,95 @@
 <h2 class="section-title">Empresa</h2>
 <div class="card" style="margin-bottom:1.25rem">
   <div class="card-body">
-    <div class="detail-row">
-      <span class="detail-label">Nome</span>
-      <span class="detail-value">{{ empresa.nome }}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-label">CNPJ</span>
-      <span class="detail-value">{{ empresa.cnpj|default:"—" }}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-label">E-mail</span>
-      <span class="detail-value">{{ empresa.email|default:"—" }}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-label">Telefone</span>
-      <span class="detail-value">{{ empresa.telefone|default:"—" }}</span>
-    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="salvar_empresa">
+      <div class="cfg-form">
+        <div class="form-group">
+          <label>Nome</label>
+          {{ empresa_form.nome }}
+          {{ empresa_form.nome.errors }}
+        </div>
+        <div class="form-group">
+          <label>CNPJ</label>
+          {{ empresa_form.cnpj }}
+          {{ empresa_form.cnpj.errors }}
+        </div>
+        <div class="form-group">
+          <label>E-mail</label>
+          {{ empresa_form.email }}
+          {{ empresa_form.email.errors }}
+        </div>
+        <div class="form-group">
+          <label>Telefone</label>
+          {{ empresa_form.telefone }}
+          {{ empresa_form.telefone.errors }}
+        </div>
+        <div class="form-group full" style="margin-top:.5rem">
+          <button type="submit" class="btn btn-primary">Salvar Dados da Empresa</button>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 
-<!-- Rotas e configurações -->
-<h2 class="section-title">Rotas e configurações</h2>
-<div class="card" style="margin-bottom:1.25rem">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Rota</th>
-          <th>Periodicidade</th>
-          <th>Taxa Juros</th>
-          <th>Parcelas</th>
-          <th>Limite Máx.</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for rota in rotas %}
-        <tr>
-          <td style="font-weight:500">{{ rota.nome }}</td>
-          {% if rota.configuracao %}
-          <td class="td-muted">{{ rota.configuracao.get_periodicidade_padrao_display }}</td>
-          <td>{{ rota.configuracao.taxa_juros_padrao }}%</td>
-          <td style="text-align:center">{{ rota.configuracao.num_parcelas_padrao }}x</td>
-          <td class="td-muted">{% if rota.configuracao.limite_emprestimo_max %}R$ {{ rota.configuracao.limite_emprestimo_max|floatformat:2 }}{% else %}—{% endif %}</td>
-          {% else %}
-          <td colspan="4" class="td-muted">Sem configuração</td>
-          {% endif %}
-          <td>
-            {% if rota.ativa %}<span class="badge badge-green">Ativa</span>{% else %}<span class="badge badge-gray">Inativa</span>{% endif %}
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhuma rota.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<!-- Configurações das Rotas -->
+<h2 class="section-title">Configurações das Rotas</h2>
+<p class="config-hint" style="margin-top:-.5rem;margin-bottom:.75rem">
+  Defina a taxa de juros, periodicidade, parcelas e limite de cada rota. Essas configurações são aplicadas automaticamente ao criar novos empréstimos.
+</p>
+
+{% for item in config_forms %}
+<div class="card rota-config-card">
+  <div class="rota-config-header">
+    <h3>{{ item.rota.nome }}</h3>
+    <div>
+      {% if item.rota.ativa %}<span class="badge badge-green">Ativa</span>{% else %}<span class="badge badge-gray">Inativa</span>{% endif %}
+      {% if not item.has_config %}<span class="badge-info" style="margin-left:.4rem">Sem configuração</span>{% endif %}
+    </div>
+  </div>
+  <div class="rota-config-body">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="salvar_config_{{ item.rota.pk }}">
+      <div class="cfg-form">
+        <div class="form-group">
+          <label>Taxa de Juros (%)</label>
+          {{ item.form.taxa_juros_padrao }}
+          {{ item.form.taxa_juros_padrao.errors }}
+        </div>
+        <div class="form-group">
+          <label>Periodicidade</label>
+          {{ item.form.periodicidade_padrao }}
+          {{ item.form.periodicidade_padrao.errors }}
+        </div>
+        <div class="form-group">
+          <label>Nº Parcelas Padrão</label>
+          {{ item.form.num_parcelas_padrao }}
+          {{ item.form.num_parcelas_padrao.errors }}
+        </div>
+        <div class="form-group">
+          <label>Limite Máx. Empréstimo (R$)</label>
+          {{ item.form.limite_emprestimo_max }}
+          {{ item.form.limite_emprestimo_max.errors }}
+        </div>
+        <div class="form-group full" style="margin-top:.25rem">
+          <button type="submit" class="btn btn-green btn-sm">Salvar Configuração</button>
+        </div>
+      </div>
+      <p class="config-hint">
+        {% if item.has_config %}
+          Alterar a configuração afeta apenas novos empréstimos. Contratos existentes mantêm a taxa e parcelas originais.
+        {% else %}
+          Esta rota ainda não possui configuração. Preencha os campos e salve.
+        {% endif %}
+      </p>
+    </form>
   </div>
 </div>
+{% empty %}
+<div class="card" style="padding:2rem;text-align:center;color:var(--text-muted)">Nenhuma rota cadastrada.</div>
+{% endfor %}
 
 <!-- Equipe -->
 <h2 class="section-title">Equipe</h2>

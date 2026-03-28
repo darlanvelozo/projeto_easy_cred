@@ -12,4 +12,5 @@ urlpatterns = [
     path('dashboard/vendedor/', views.dashboard_vendedor, name='dashboard_vendedor'),
     path('relatorios/', views.relatorios, name='relatorios'),
     path('configuracoes/', views.configuracoes, name='configuracoes'),
+    path('api/config-rota/<int:rota_id>/', views.api_config_rota, name='api_config_rota'),
 ]

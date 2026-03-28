@@ -23,6 +23,7 @@ class EmprestimoForm(forms.ModelForm):
 
     def __init__(self, *args, empresa=None, usuario=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.empresa = empresa
         if empresa:
             self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, ativo=True).order_by('nome')
             self.fields['rota'].queryset = Rota.objects.filter(empresa=empresa, ativa=True)
@@ -36,3 +37,19 @@ class EmprestimoForm(forms.ModelForm):
         if usuario and usuario.perfil == 'vendedor':
             self.fields['vendedor'].initial = usuario
             self.fields['vendedor'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned = super().clean()
+        rota = cleaned.get('rota')
+        valor_principal = cleaned.get('valor_principal')
+
+        if rota and valor_principal:
+            config = getattr(rota, 'configuracao', None)
+            if config and config.limite_emprestimo_max:
+                if valor_principal > config.limite_emprestimo_max:
+                    self.add_error(
+                        'valor_principal',
+                        f'Valor excede o limite da rota "{rota.nome}": '
+                        f'máximo R$ {config.limite_emprestimo_max:.2f}'
+                    )
+        return cleaned
