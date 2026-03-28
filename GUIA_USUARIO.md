@@ -1,23 +1,19 @@
-# SystemPay.tec — Guia de Utilização
+# EasyCred — Guia de Utilizacao
 
-> Guia prático do sistema organizado por perfil de usuário.
+> Guia pratico do sistema organizado por perfil de usuario.
 
 ---
 
-## Credenciais de Acesso (ambiente de demonstração)
+## Credenciais de Acesso (ambiente de demonstracao)
 
-| Usuário | Perfil | Senha | Empresa |
+| Usuario | Perfil | Senha | Rota |
 |---|---|---|---|
-| `admin_cf` | Admin SaaS | `admin123` | Crédito Fácil Ltda |
-| `gerente_cf` | Gerente | `gerente123` | Crédito Fácil Ltda |
-| `vendedor_cf1` | Vendedor | `vend123` | Crédito Fácil Ltda |
-| `vendedor_cf2` | Vendedor | `vend123` | Crédito Fácil Ltda |
-| `admin_fc` | Admin SaaS | `admin123` | FinCred Soluções ME |
-| `gerente_fc` | Gerente | `gerente123` | FinCred Soluções ME |
-| `vendedor_fc1` | Vendedor | `vend123` | FinCred Soluções ME |
-| `vendedor_fc2` | Vendedor | `vend123` | FinCred Soluções ME |
+| `darlan` | Admin SaaS | `darlan123` | — |
+| `marcos` | Gerente | `marcos123` | — |
+| `raimundo` | Vendedor | `raimundo123` | Teresina |
+| `chico` | Vendedor | `chico123` | Picos |
 
-Para popular o banco com dados de demonstração:
+Para popular o banco com dados de demonstracao:
 
 ```bash
 source myenv/bin/activate
@@ -26,161 +22,233 @@ python manage.py popular_banco --limpar
 
 ---
 
-## 1. Visão Admin SaaS
+## 1. Visao Admin SaaS
 
-**Acesso:** Login com perfil `admin` (ex: `admin_cf` / `admin123`)
+**Acesso:** Login com `darlan` / `darlan123`
 
-O Admin SaaS é o dono ou gestor principal da empresa que contratou o sistema. Ele tem visão completa de toda a operação.
+O Admin e o dono ou gestor principal da empresa. Tem visao completa de toda a operacao.
 
 ### Dashboard (`/dashboard/admin/`)
 
-Ao fazer login, o admin é redirecionado automaticamente para seu dashboard, que apresenta:
+Ao fazer login, o admin e redirecionado automaticamente para seu dashboard.
 
-#### Métricas principais (topo)
-- **Carteira Ativa** — Valor total contratado (com juros) de todos os empréstimos ativos da empresa
-- **A Receber** — Soma das parcelas pendentes e atrasadas ainda não pagas
+#### Metricas principais (topo)
+- **Carteira Ativa** — Valor total contratado (com juros) de todos os emprestimos ativos
+- **A Receber** — Soma das parcelas pendentes e atrasadas
 - **Saldo em Caixa** — Saldo consolidado de todos os caixas das rotas
-- **Inadimplência** — Valor total das parcelas em atraso
+- **Inadimplencia** — Valor total das parcelas em atraso
 - **Recebido Hoje** — Total de pagamentos registrados no dia
 
 #### Contadores
-- Clientes ativos, Empréstimos ativos, Clientes inadimplentes, Parcelas que vencem hoje
+- Clientes ativos, Emprestimos ativos, Clientes inadimplentes, Parcelas que vencem hoje
 
 #### Rotas da empresa
-Cards com resumo de cada rota: clientes, empréstimos ativos, inadimplentes, saldo do caixa, configuração (periodicidade, taxa de juros, número de vendedores).
+Cards com resumo de cada rota: clientes, emprestimos ativos, inadimplentes, saldo do caixa, configuracao.
 
-#### Últimos empréstimos
-Tabela com os 8 empréstimos mais recentes: cliente, vendedor, rota, valor principal, total com juros, parcelas, periodicidade, data e status.
+#### Ultimos emprestimos
+Tabela com os 8 emprestimos mais recentes: cliente, vendedor, rota, valor, parcelas, data e status.
 
 #### Inadimplentes
-Lista dos clientes em atraso: nome, rota, telefone, valor atrasado, quantidade de parcelas e dias de atraso.
+Clientes em atraso: nome, rota, telefone, valor atrasado, parcelas e dias de atraso.
 
 #### Recebimentos hoje
-Pagamentos registrados no dia corrente com detalhes de cliente, rota, parcela e valor.
+Pagamentos do dia com detalhes de cliente, rota, parcela e valor.
 
-### Navegação lateral (sidebar)
-O admin tem acesso a todos os itens do menu:
+### Navegacao lateral (sidebar)
+O admin tem acesso a todos os itens:
 - **Dashboard** — Painel principal
-- **Rotas** — Gestão de rotas (em desenvolvimento)
-- **Clientes** — Gestão de clientes (em desenvolvimento)
-- **Empréstimos** — Gestão de empréstimos (em desenvolvimento)
-- **Caixa** — Gestão financeira (em desenvolvimento)
-- **Relatórios** — Relatórios gerenciais (em desenvolvimento)
-- **Configurações** — Configurações do sistema (em desenvolvimento)
+- **Rotas** — Lista de rotas com metricas, detalhe de cada rota
+- **Clientes** — Lista, cadastro, edicao, detalhe e mapa de clientes
+- **Emprestimos** — Lista, novo emprestimo, detalhe com parcelas
+- **Caixa** — Saldo por rota e historico de movimentacoes
+- **Relatorios** — Inadimplencia, recebimentos do mes, carteira por rota, top inadimplentes
+- **Configuracoes** — Editar dados da empresa, configurar rotas (taxa, periodicidade, parcelas, limite)
+
+### Configuracoes
+
+Na pagina de configuracoes o admin pode:
+
+1. **Editar dados da empresa** — nome, CNPJ, e-mail, telefone
+2. **Configurar cada rota** — taxa de juros padrao, periodicidade, numero de parcelas e limite maximo de emprestimo
+3. **Visualizar equipe** — lista de gerentes e vendedores ativos
+
+As configuracoes de rota sao aplicadas automaticamente ao criar novos emprestimos:
+- Campos pre-preenchidos ao selecionar a rota
+- Limite maximo validado no formulario e no servidor
+- Emprestimos existentes nao sao afetados por mudancas
 
 ---
 
-## 2. Visão Gerente
+## 2. Visao Gerente
 
-**Acesso:** Login com perfil `gerente` (ex: `gerente_cf` / `gerente123`)
+**Acesso:** Login com `marcos` / `marcos123`
 
-O Gerente é responsável por supervisionar as rotas, os vendedores e a operação do dia a dia.
+O Gerente supervisiona rotas, vendedores e a operacao do dia a dia.
 
 ### Dashboard (`/dashboard/gerente/`)
 
-#### Métricas principais
-- **Rotas Ativas** — Quantidade de rotas operando na empresa
+#### Metricas principais
+- **Rotas Ativas** — Quantidade de rotas operando
 - **Vendedores** — Quantidade de vendedores ativos
 - **Clientes Ativos** — Total de clientes com cadastro ativo
 - **Inadimplentes** — Clientes com parcelas em atraso
 
 #### Rotas
-Cards com resumo de cada rota: clientes, empréstimos ativos, inadimplentes, configuração (periodicidade, taxa de juros) e saldo do caixa.
+Cards com resumo de cada rota: clientes, emprestimos ativos, inadimplentes, configuracao e saldo do caixa.
 
 #### Vendedores — Desempenho de hoje
-Tabela com cada vendedor: nome, rotas vinculadas, empréstimos ativos e valor coletado hoje. Permite ao gerente acompanhar a produtividade da equipe em tempo real.
+Tabela com cada vendedor: nome, rotas vinculadas, emprestimos ativos e valor coletado hoje.
 
-#### Parcelas nos próximos 7 dias
-Tabela com as parcelas pendentes para os próximos 7 dias: cliente, rota, vencimento, valor e status. Ajuda no planejamento das cobranças da semana.
+#### Parcelas nos proximos 7 dias
+Parcelas pendentes para os proximos 7 dias: cliente, rota, vencimento, valor e status.
 
-### Navegação lateral
-O gerente vê:
-- **Dashboard**, **Rotas**, **Clientes**, **Empréstimos**, **Caixa**, **Relatórios**
+### O que o gerente pode fazer
+- Listar, ver detalhe de rotas
+- Listar, cadastrar, editar e ver detalhe de clientes
+- Ver mapa de clientes
+- Listar, criar emprestimos e ver detalhe com parcelas
+- Registrar pagamentos
+- Ver saldo do caixa por rota e historico de movimentacoes
+- Acessar relatorios
 
-Não tem acesso a: Configurações.
-
-### Permissões
-- O gerente **não** pode acessar o dashboard do admin (`/dashboard/admin/`). Se tentar, será redirecionado de volta ao seu painel.
+### O que o gerente NAO pode fazer
+- Acessar configuracoes (exclusivo do admin)
 
 ---
 
-## 3. Visão Vendedor
+## 3. Visao Vendedor
 
-**Acesso:** Login com perfil `vendedor` (ex: `vendedor_cf1` / `vend123`)
+**Acesso:** Login com `raimundo` / `raimundo123` (Teresina) ou `chico` / `chico123` (Picos)
 
-O Vendedor é o trabalhador de campo que percorre as rotas, concede empréstimos e coleta pagamentos.
+O Vendedor e o trabalhador de campo que percorre as rotas, cadastra clientes, concede emprestimos e coleta pagamentos.
 
 ### Dashboard (`/dashboard/vendedor/`)
 
-#### Métricas principais
-- **Minha Carteira** — Valor total dos empréstimos ativos atribuídos ao vendedor, com quantidade de empréstimos
-- **Parcelas Hoje** — Quantidade de parcelas com vencimento hoje e valor total a cobrar
-- **Recebido Hoje** — Valor total que o vendedor já coletou no dia
-- **Inadimplentes** — Quantidade de clientes em atraso nas rotas do vendedor
+#### Metricas principais
+- **Minha Carteira** — Valor total dos emprestimos ativos do vendedor
+- **Parcelas Hoje** — Quantidade e valor das parcelas com vencimento hoje
+- **Recebido Hoje** — Valor total coletado no dia
+- **Inadimplentes** — Clientes em atraso nas rotas do vendedor
 
-#### Cobranças de hoje
-Lista das parcelas com vencimento no dia de hoje: nome do cliente, rota, número da parcela e valor. Cada item tem um botão **"Registrar Pagamento"** (funcionalidade em desenvolvimento).
+#### Cobrancas de hoje
+Parcelas com vencimento hoje: cliente, rota, numero da parcela e valor. Botao **"Registrar Pagamento"** para cada parcela.
 
 #### Clientes inadimplentes
-Lista dos clientes em atraso nas rotas do vendedor: nome, rota, telefone, valor total atrasado, quantidade de parcelas atrasadas e dias de atraso. Permite ao vendedor priorizar cobranças.
+Clientes em atraso: nome, rota, telefone, valor atrasado, parcelas atrasadas e dias de atraso.
 
 #### Minha carteira ativa
-Tabela completa com todos os empréstimos ativos do vendedor: cliente, rota, valor da parcela, parcelas restantes (ex: 7/10) e data do próximo vencimento.
+Todos os emprestimos ativos do vendedor: cliente, rota, valor da parcela, parcelas restantes e proximo vencimento.
 
-### Navegação lateral
-O vendedor vê apenas:
-- **Dashboard**, **Clientes**, **Empréstimos**
+### O que o vendedor pode fazer
 
-Não tem acesso a: Rotas, Caixa, Relatórios, Configurações.
+#### Clientes
+- **Listar** clientes das suas rotas
+- **Cadastrar** novos clientes com captura de GPS pelo celular
+- **Editar** clientes das suas rotas
+- **Ver detalhe** do cliente com historico de emprestimos
+- **Ver mapa** dos clientes com localizacao cadastrada
 
-### Permissões
-- O vendedor **não** pode acessar o dashboard do admin nem do gerente. Se tentar, será redirecionado para seu próprio painel.
-- O vendedor **só vê dados das suas próprias rotas** — não tem acesso a dados de outros vendedores ou de outras empresas.
+#### Emprestimos
+- **Listar** seus emprestimos
+- **Criar** emprestimo com formulario simplificado:
+  - So ve clientes e rotas vinculadas a ele
+  - Taxa, parcelas e periodicidade pre-preenchidos pela configuracao da rota
+  - Data do 1o vencimento calculada automaticamente (amanha)
+  - Limite maximo da rota validado
+- **Ver detalhe** do emprestimo com lista de parcelas
+
+#### Pagamentos
+- **Registrar pagamento** de parcelas pendentes ou atrasadas
+
+### O que o vendedor NAO pode fazer
+- Ver rotas (pagina de gestao de rotas)
+- Acessar caixa, relatorios ou configuracoes
+- Ver dados de outros vendedores ou de rotas que nao sao dele
 
 ---
 
-## Fluxo Geral de Uso
+## Funcionalidades do Sistema
 
-### 1. Login
-- Acesse a página inicial do sistema (`/`)
-- Informe usuário e senha
-- O sistema redireciona automaticamente para o dashboard correspondente ao seu perfil
+### Mapa de Clientes (`/clientes/mapa/`)
+- Visualizacao dos clientes com localizacao no mapa (OpenStreetMap)
+- Filtro por rota
+- Popup com nome, rota, telefone e link para detalhe
+- Vendedor ve apenas clientes das suas rotas
+- Botao de acesso na lista de clientes
 
-### 2. Operação diária (Vendedor)
-1. Ao iniciar o dia, consulte as **Cobranças de hoje** para saber quais clientes visitar
-2. Verifique os **Clientes inadimplentes** para priorizar cobranças em atraso
-3. Registre pagamentos conforme recebidos (funcionalidade em desenvolvimento)
-4. Acompanhe o **Recebido Hoje** para controlar o total coletado
+### Cadastro de Cliente com GPS
+- No formulario de cliente, botao **"Usar GPS"** captura a localizacao do celular
+- Latitude e longitude sao preenchidas automaticamente
+- Cliente aparece no mapa apos salvar
+- Link **"Abrir no Maps"** no detalhe do cliente
 
-### 3. Supervisão (Gerente)
-1. Acompanhe o **desempenho dos vendedores** pela tabela de coletado hoje
-2. Verifique as **parcelas dos próximos 7 dias** para planejar a semana
-3. Monitore as **rotas** para identificar desequilíbrios (inadimplência alta, caixa baixo)
+### Criacao de Emprestimo
+1. Selecionar rota → campos pre-preenchidos pela configuracao (taxa, periodicidade, parcelas)
+2. Selecionar cliente e informar valor principal
+3. Sistema calcula e exibe previa: valor total com juros e valor da parcela
+4. Se valor exceder limite da rota, alerta visual + bloqueio no servidor
+5. Ao salvar, o sistema automaticamente:
+   - Calcula valor total e valor da parcela
+   - Gera todas as parcelas com vencimentos
+   - Registra saida no caixa da rota
 
-### 4. Gestão (Admin)
-1. Analise os **indicadores financeiros** (carteira, saldo, inadimplência)
-2. Acompanhe os **recebimentos do dia** para validar a operação
-3. Monitore os **últimos empréstimos** concedidos
-4. Identifique e acompanhe **clientes inadimplentes**
+### Registro de Pagamento
+1. No detalhe do emprestimo, clicar **"Pagar"** na parcela
+2. Valor pre-preenchido, escolher forma (dinheiro/pix/transferencia)
+3. Ao salvar, o sistema automaticamente:
+   - Registra entrada no caixa da rota
+   - Marca parcela como paga
+   - Se era a ultima parcela, marca emprestimo como quitado
+
+---
+
+## Fluxo Diario de Uso
+
+### Vendedor (campo)
+1. Fazer login no celular
+2. Consultar **Cobrancas de hoje** no dashboard
+3. Abrir **Mapa** para planejar a rota de visitas
+4. Em cada cliente:
+   - Registrar pagamento das parcelas do dia
+   - Se novo cliente, cadastrar com GPS
+   - Se necessario, criar novo emprestimo
+5. Acompanhar **Recebido Hoje** para controle
+
+### Gerente (supervisao)
+1. Verificar **desempenho dos vendedores** no dashboard
+2. Conferir **parcelas dos proximos 7 dias** para planejar a semana
+3. Monitorar **rotas** e identificar problemas (inadimplencia alta, caixa baixo)
+4. Acessar **relatorios** para visao mensal
+
+### Admin (gestao)
+1. Analisar **indicadores financeiros** no dashboard
+2. Verificar **recebimentos do dia**
+3. Acompanhar **inadimplentes** e tomar decisoes
+4. Ajustar **configuracoes** das rotas conforme necessidade
+5. Consultar **relatorios** para decisoes estrategicas
 
 ---
 
 ## Isolamento de Dados (Multi-tenant)
 
-O sistema garante que cada empresa vê **apenas seus próprios dados**:
-- Um vendedor da "Crédito Fácil" não vê clientes da "FinCred"
-- Rotas, empréstimos, pagamentos e movimentações são isolados por empresa
-- Não há possibilidade de cruzamento de dados entre empresas
+O sistema garante que cada empresa ve **apenas seus proprios dados**:
+- Usuarios so acessam dados da sua empresa
+- Vendedores so veem dados das rotas onde estao vinculados
+- Rotas, emprestimos, pagamentos e movimentacoes sao isolados por empresa
 
 ---
 
-## Regras de Negócio Importantes
+## Regras de Negocio
 
-| Regra | Descrição |
+| Regra | Descricao |
 |---|---|
-| **Juros simples** | `valor_total = principal × (1 + taxa/100)` |
-| **Taxa gravada no contrato** | Alterações na configuração da rota não afetam empréstimos já criados |
-| **Caixa via movimentações** | O saldo do caixa nunca é alterado diretamente — toda alteração passa por uma movimentação financeira |
-| **Parcelas automáticas** | Ao criar um empréstimo, as parcelas são geradas automaticamente pelo sistema |
-| **Saída automática no caixa** | Ao criar um empréstimo, o valor principal é debitado do caixa da rota |
-| **Entrada automática no caixa** | Ao registrar um pagamento, o valor é creditado no caixa da rota |
+| **Juros simples** | `valor_total = principal x (1 + taxa/100)` |
+| **Taxa gravada no contrato** | Mudancas na configuracao da rota nao afetam emprestimos existentes |
+| **Caixa via movimentacoes** | Saldo nunca e alterado diretamente — toda alteracao passa por movimentacao financeira |
+| **Parcelas automaticas** | Ao criar emprestimo, parcelas sao geradas automaticamente com vencimentos calculados |
+| **Saida automatica no caixa** | Ao criar emprestimo, valor principal e debitado do caixa da rota |
+| **Entrada automatica no caixa** | Ao registrar pagamento, valor e creditado no caixa da rota |
+| **Quitacao automatica** | Ao pagar ultima parcela, emprestimo e marcado como quitado |
+| **Limite por rota** | Valor principal nao pode exceder o limite maximo configurado na rota |
+| **Vencimento automatico (vendedor)** | Vendedor nao escolhe data — 1o vencimento e sempre amanha |
+| **Config pre-preenche formulario** | Ao selecionar rota, taxa/parcelas/periodicidade sao preenchidos da configuracao |
