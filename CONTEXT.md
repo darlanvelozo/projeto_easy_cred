@@ -87,7 +87,10 @@ systempaytec/
 - [x] Autenticação: login e logout implementados
 - [x] Página de login SystemPay (layout split, toggle senha, mensagens de erro)
 - [x] Redirecionamento por perfil após login (superuser→/admin/, admin/gerente/vendedor→dashboard próprio)
-- [ ] Dashboards de cada perfil (admin, gerente, vendedor)
+- [x] Base layout (base.html): sidebar escura, topbar, cards, badges, tabelas — reutilizável em todas as telas
+- [x] Dashboard Admin SaaS: 4 métricas (carteira, caixa, inadimplência, recebido hoje), rotas, últimos empréstimos, clientes inadimplentes
+- [ ] Dashboard Gerente
+- [ ] Dashboard Vendedor
 - [ ] Controle de permissões por perfil (decorators/mixins)
 - [ ] Recuperação de senha
 - [ ] Relatórios: inadimplência, fluxo de caixa, carteira por rota

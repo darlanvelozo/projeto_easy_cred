@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}SystemPay{% endblock %} — SystemPay.tec</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* cores base */
+      --sidebar-bg:      #0f172a;
+      --sidebar-border:  #1e293b;
+      --sidebar-hover:   #1e293b;
+      --sidebar-active:  #1d4ed8;
+      --sidebar-width:   240px;
+
+      --topbar-bg:       #ffffff;
+      --topbar-border:   #e2e8f0;
+      --topbar-height:   60px;
+
+      --page-bg:         #f1f5f9;
+      --card-bg:         #ffffff;
+      --card-border:     #e2e8f0;
+      --card-radius:     12px;
+
+      --text-primary:    #0f172a;
+      --text-secondary:  #475569;
+      --text-muted:      #94a3b8;
+      --text-sidebar:    #94a3b8;
+      --text-sidebar-active: #ffffff;
+
+      --blue:    #2563eb;
+      --teal:    #0ea5e9;
+      --green:   #10b981;
+      --yellow:  #f59e0b;
+      --red:     #ef4444;
+      --purple:  #8b5cf6;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+      --shadow:    0 4px 16px rgba(0,0,0,.08);
+    }
+
+    html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--page-bg); color: var(--text-primary); }
+
+    /* ── Layout principal ────────────────────── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ─────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+      z-index: 100;
+      border-right: 1px solid var(--sidebar-border);
+      transition: transform .25s;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: 1.25rem 1.25rem 1rem;
+      border-bottom: 1px solid var(--sidebar-border);
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-icon svg { width: 18px; height: 18px; fill: #fff; }
+
+    .logo-text { font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: -.02em; line-height: 1; }
+    .logo-text span { color: var(--teal); }
+    .logo-sub { font-size: .65rem; color: var(--text-sidebar); font-weight: 400; }
+
+    /* empresa badge */
+    .sidebar-empresa {
+      margin: .75rem 1rem;
+      padding: .6rem .75rem;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--sidebar-border);
+      border-radius: 8px;
+    }
+
+    .empresa-label { font-size: .65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+    .empresa-nome  { font-size: .82rem; color: #e2e8f0; font-weight: 500; margin-top: .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* nav */
+    .sidebar-nav { flex: 1; padding: .5rem 0; overflow-y: auto; }
+
+    .nav-section-label {
+      font-size: .65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+      padding: .9rem 1.25rem .35rem;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      padding: .6rem 1.25rem;
+      color: var(--text-sidebar);
+      text-decoration: none;
+      font-size: .875rem;
+      font-weight: 500;
+      border-radius: 0;
+      transition: background .15s, color .15s;
+      position: relative;
+    }
+
+    .nav-link svg { width: 17px; height: 17px; flex-shrink: 0; opacity: .7; }
+
+    .nav-link:hover { background: var(--sidebar-hover); color: #e2e8f0; }
+    .nav-link:hover svg { opacity: 1; }
+
+    .nav-link.active {
+      background: var(--sidebar-active);
+      color: #fff;
+    }
+    .nav-link.active svg { opacity: 1; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      font-size: .65rem;
+      font-weight: 700;
+      padding: .1rem .45rem;
+      border-radius: 999px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    /* footer sidebar */
+    .sidebar-footer {
+      padding: .75rem 1rem;
+      border-top: 1px solid var(--sidebar-border);
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      padding: .5rem .6rem;
+      border-radius: 8px;
+      transition: background .15s;
+      text-decoration: none;
+    }
+
+    .user-card:hover { background: var(--sidebar-hover); }
+
+    .user-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .user-info { flex: 1; overflow: hidden; }
+    .user-name  { font-size: .8rem; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role  { font-size: .7rem; color: var(--text-muted); }
+
+    .user-card svg { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
+
+    /* ── Área principal ──────────────────────── */
+    .main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── Topbar ──────────────────────────────── */
+    .topbar {
+      height: var(--topbar-height);
+      background: var(--topbar-bg);
+      border-bottom: 1px solid var(--topbar-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.75rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .topbar-left { display: flex; flex-direction: column; }
+    .topbar-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+    .topbar-sub   { font-size: .78rem; color: var(--text-muted); margin-top: .05rem; }
+
+    .topbar-right { display: flex; align-items: center; gap: .75rem; }
+
+    .topbar-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      background: transparent;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary);
+      position: relative;
+      transition: background .15s;
+    }
+
+    .topbar-btn:hover { background: var(--page-bg); }
+    .topbar-btn svg { width: 17px; height: 17px; }
+
+    .notif-dot {
+      width: 7px; height: 7px;
+      background: var(--red);
+      border-radius: 50%;
+      position: absolute;
+      top: 7px; right: 7px;
+      border: 1.5px solid #fff;
+    }
+
+    .topbar-date {
+      font-size: .8rem;
+      color: var(--text-muted);
+      padding: .35rem .75rem;
+      background: var(--page-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+    }
+
+    /* ── Conteúdo ────────────────────────────── */
+    .content { padding: 1.75rem; flex: 1; }
+
+    /* ── Cards utilitários ───────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--card-radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card-header {
+      padding: 1.1rem 1.25rem .75rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title { font-size: .9rem; font-weight: 600; color: var(--text-primary); }
+    .card-sub   { font-size: .78rem; color: var(--text-muted); margin-top: .1rem; }
+
+    .card-body { padding: 1.25rem; }
+
+    /* ── Grid helpers ────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+
+    /* ── Badges de status ────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      padding: .2rem .6rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 600;
+    }
+    .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+    .badge-green  { background: #dcfce7; color: #16a34a; }
+    .badge-red    { background: #fee2e2; color: #dc2626; }
+    .badge-yellow { background: #fef9c3; color: #ca8a04; }
+    .badge-blue   { background: #dbeafe; color: #2563eb; }
+    .badge-gray   { background: #f1f5f9; color: #64748b; }
+
+    /* ── Tabelas ─────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+      padding: .7rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: .8rem 1rem;
+      font-size: .875rem;
+      color: var(--text-primary);
+      border-bottom: 1px solid #f8fafc;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+
+    .td-muted { color: var(--text-muted); font-size: .8rem; }
+
+    /* ── Alertas / mensagens ─────────────────── */
+    .messages { margin-bottom: 1.25rem; }
+
+    .alert {
+      padding: .85rem 1rem;
+      border-radius: 8px;
+      font-size: .875rem;
+      margin-bottom: .5rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    .alert-error   { background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; }
+    .alert-success { background: #dcfce7; border: 1px solid #86efac; color: #16a34a; }
+    .alert-info    { background: #dbeafe; border: 1px solid #93c5fd; color: #2563eb; }
+
+    /* ── Responsivo ──────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .content { padding: 1rem; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" id="sidebar">
+
+    <a href="{% url 'accounts:dashboard_redirect' %}" class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.88 14.76V18h-1.75v-1.29c-1.62-.3-2.94-1.4-3.06-3.08h1.85c.11.92.79 1.62 2.1 1.62 1.22 0 1.93-.62 1.93-1.47 0-.75-.5-1.2-1.91-1.54l-.92-.22c-1.81-.44-2.88-1.33-2.88-2.93 0-1.53 1.19-2.66 2.89-2.94V5h1.75v1.17c1.6.28 2.7 1.3 2.77 2.87h-1.84c-.08-.91-.68-1.56-1.86-1.56-1.11 0-1.83.54-1.83 1.38 0 .72.52 1.15 1.77 1.47l.92.23c1.9.46 3.02 1.34 3.02 3.02 0 1.63-1.22 2.83-2.95 3.18z"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">System<span>Pay</span></div>
+        <div class="logo-sub">.tec</div>
+      </div>
+    </a>
+
+    {% if user.empresa %}
+    <div class="sidebar-empresa">
+      <div class="empresa-label">Empresa</div>
+      <div class="empresa-nome">{{ user.empresa.nome }}</div>
+    </div>
+    {% endif %}
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
+
+      <a href="{% url 'accounts:dashboard_redirect' %}" class="nav-link {% block nav_dashboard %}{% endblock %}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Dashboard
+      </a>
+
+      <a href="#" class="nav-link {% block nav_rotas %}{% endblock %}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        Rotas
+      </a>
+
+      <a href="#" class="nav-link {% block nav_clientes %}{% endblock %}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        Clientes
+      </a>
+
+      <a href="#" class="nav-link {% block nav_emprestimos %}{% endblock %}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+        Empréstimos
+      </a>
+
+      <div class="nav-section-label">Financeiro</div>
+
+      <a href="#" class="nav-link {% block nav_caixa %}{% endblock %}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+        Caixa
+      </a>
+
+      <a href="#" class="nav-link {% block nav_relatorios %}{% endblock %}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+        Relatórios
+      </a>
+
+      <div class="nav-section-label">Sistema</div>
+
+      <a href="#" class="nav-link {% block nav_config %}{% endblock %}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87a.485.485 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        Configurações
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="{% url 'accounts:logout' %}" class="user-card">
+        <div class="user-avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="user-role">{{ user.get_perfil_display }}</div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── Área principal ── -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">{% block page_title %}Dashboard{% endblock %}</span>
+        <span class="topbar-sub">{% block page_sub %}{% endblock %}</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-date">
+          {{ hoje|date:"D, d \d\e M \d\e Y" }}
+        </div>
+        <button class="topbar-btn" title="Notificações">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+          <span class="notif-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mensagens Django -->
+    <div class="content">
+      {% if messages %}
+      <div class="messages">
+        {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags|default:'info' }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </div>
+
+  </div>
+</div>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>
