@@ -21,6 +21,7 @@ class ConfiguracaoRotaForm(forms.ModelForm):
         fields = [
             'taxa_juros_padrao', 'periodicidade_padrao',
             'num_parcelas_padrao', 'limite_emprestimo_max',
+            'multa_atraso', 'juros_mora_dia',
         ]
         widgets = {
             'taxa_juros_padrao': forms.NumberInput(attrs={
@@ -32,10 +33,18 @@ class ConfiguracaoRotaForm(forms.ModelForm):
             'limite_emprestimo_max': forms.NumberInput(attrs={
                 'step': '0.01', 'min': '0', 'placeholder': 'Sem limite',
             }),
+            'multa_atraso': forms.NumberInput(attrs={
+                'step': '0.01', 'min': '0', 'placeholder': '0,00',
+            }),
+            'juros_mora_dia': forms.NumberInput(attrs={
+                'step': '0.0001', 'min': '0', 'placeholder': '0,0000',
+            }),
         }
         labels = {
             'taxa_juros_padrao': 'Taxa de Juros (%)',
             'periodicidade_padrao': 'Periodicidade',
             'num_parcelas_padrao': 'Nº Parcelas',
             'limite_emprestimo_max': 'Limite Máx. (R$)',
+            'multa_atraso': 'Multa Atraso (%)',
+            'juros_mora_dia': 'Juros Mora/Dia (%)',
         }

@@ -30,6 +30,14 @@ class ConfiguracaoRota(models.Model):
     periodicidade_padrao = models.CharField(max_length=20, choices=PERIODICIDADE_CHOICES, default='semanal')
     num_parcelas_padrao = models.PositiveSmallIntegerField(default=10)
     limite_emprestimo_max = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    multa_atraso = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text='Multa por atraso em % sobre o valor da parcela',
+    )
+    juros_mora_dia = models.DecimalField(
+        max_digits=5, decimal_places=4, null=True, blank=True,
+        help_text='Juros de mora diario em % sobre o valor da parcela',
+    )
 
     class Meta:
         verbose_name = 'Configuração de Rota'

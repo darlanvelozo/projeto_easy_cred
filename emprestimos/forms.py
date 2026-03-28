@@ -1,10 +1,11 @@
 from datetime import timedelta
+from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.utils import timezone
 from .models import Emprestimo
 from clientes.models import Cliente
-from rotas.models import Rota
+from rotas.models import Rota, CaixaRota
 from accounts.models import Usuario
 
 
@@ -74,6 +75,45 @@ class EmprestimoForm(forms.ModelForm):
                         'valor_principal',
                         f'Valor excede o limite da rota "{rota.nome}": '
                         f'maximo R$ {config.limite_emprestimo_max:.2f}'
+                    )
+
+            # Validar saldo do caixa
+            caixa = getattr(rota, 'caixa', None)
+            if caixa is None:
+                try:
+                    caixa = CaixaRota.objects.get(rota=rota)
+                except CaixaRota.DoesNotExist:
+                    caixa = None
+            if caixa and caixa.saldo < valor_principal:
+                self.add_error(
+                    'valor_principal',
+                    f'Caixa da rota insuficiente. Saldo: R$ {caixa.saldo:.2f}'
+                )
+            elif caixa is None:
+                self.add_error(
+                    'rota',
+                    'Esta rota ainda nao possui caixa. Realize um aporte primeiro.'
+                )
+
+        # Validar limite de crédito do cliente
+        cliente = cleaned.get('cliente')
+        if rota and valor_principal and cliente:
+            limite = cliente.limite_credito
+            if limite is None:
+                config = getattr(rota, 'configuracao', None)
+                if config:
+                    limite = config.limite_emprestimo_max
+            if limite:
+                from django.db.models import Sum as _Sum
+                emprestimos_ativos = (
+                    Emprestimo.objects.filter(cliente=cliente, status='ativo')
+                    .aggregate(t=_Sum('valor_principal'))['t'] or Decimal('0')
+                )
+                if emprestimos_ativos + valor_principal > limite:
+                    self.add_error(
+                        'valor_principal',
+                        f'Limite de credito do cliente excedido. '
+                        f'Ativos: R$ {emprestimos_ativos:.2f} / Limite: R$ {limite:.2f}'
                     )
 
         # Se vendedor, auto-preenche data_primeiro_vencimento = amanha

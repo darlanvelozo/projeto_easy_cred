@@ -20,6 +20,12 @@ source myenv/bin/activate
 python manage.py popular_banco --limpar
 ```
 
+Para atualizar parcelas vencidas e marcar inadimplencia:
+
+```bash
+python manage.py atualizar_parcelas
+```
+
 ---
 
 ## 1. Visao Admin SaaS
@@ -57,24 +63,31 @@ Pagamentos do dia com detalhes de cliente, rota, parcela e valor.
 ### Navegacao lateral (sidebar)
 O admin tem acesso a todos os itens:
 - **Dashboard** — Painel principal
-- **Rotas** — Lista de rotas com metricas, detalhe de cada rota
+- **Rotas** — Lista de rotas com metricas, criar/editar rotas, detalhe de cada rota
 - **Clientes** — Lista, cadastro, edicao, detalhe e mapa de clientes
-- **Emprestimos** — Lista, novo emprestimo, detalhe com parcelas
-- **Caixa** — Saldo por rota e historico de movimentacoes
+- **Emprestimos** — Lista, novo emprestimo, detalhe com parcelas, cancelamento
+- **Caixa** — Saldo por rota, historico de movimentacoes, aportes e retiradas
 - **Relatorios** — Inadimplencia, recebimentos do mes, carteira por rota, top inadimplentes
-- **Configuracoes** — Editar dados da empresa, configurar rotas (taxa, periodicidade, parcelas, limite)
+- **Configuracoes** — Editar dados da empresa, configurar rotas (taxa, periodicidade, parcelas, limite, multa, juros)
 
 ### Configuracoes
 
 Na pagina de configuracoes o admin pode:
 
 1. **Editar dados da empresa** — nome, CNPJ, e-mail, telefone
-2. **Configurar cada rota** — taxa de juros padrao, periodicidade, numero de parcelas e limite maximo de emprestimo
+2. **Configurar cada rota:**
+   - Taxa de juros padrao (%)
+   - Periodicidade padrao (diario/semanal/quinzenal/mensal)
+   - Numero de parcelas padrao
+   - Limite maximo de emprestimo (R$)
+   - Multa por atraso (%) — percentual fixo sobre valor da parcela
+   - Juros de mora diario (%) — percentual diario sobre valor da parcela
 3. **Visualizar equipe** — lista de gerentes e vendedores ativos
 
 As configuracoes de rota sao aplicadas automaticamente ao criar novos emprestimos:
 - Campos pre-preenchidos ao selecionar a rota
 - Limite maximo validado no formulario e no servidor
+- Multa e juros aplicados automaticamente em pagamentos de parcelas atrasadas
 - Emprestimos existentes nao sao afetados por mudancas
 
 ---
@@ -107,11 +120,15 @@ Parcelas pendentes para os proximos 7 dias: cliente, rota, vencimento, valor e s
 - Listar, cadastrar, editar e ver detalhe de clientes
 - Ver mapa de clientes
 - Listar, criar emprestimos e ver detalhe com parcelas
-- Registrar pagamentos
+- Registrar pagamentos (incluindo pagamentos parciais)
 - Ver saldo do caixa por rota e historico de movimentacoes
+- Realizar aportes no caixa das rotas
 - Acessar relatorios
 
 ### O que o gerente NAO pode fazer
+- Criar ou editar rotas
+- Cancelar emprestimos
+- Realizar retiradas do caixa
 - Acessar configuracoes (exclusivo do admin)
 
 ---
@@ -155,15 +172,21 @@ Todos os emprestimos ativos do vendedor: cliente, rota, valor da parcela, parcel
   - Taxa, parcelas e periodicidade pre-preenchidos pela configuracao da rota
   - Data do 1o vencimento calculada automaticamente (amanha)
   - Limite maximo da rota validado
-- **Ver detalhe** do emprestimo com lista de parcelas
+  - Saldo do caixa validado
+  - Limite de credito do cliente validado
+- **Ver detalhe** do emprestimo com lista de parcelas (incluindo valor pago e restante)
 
 #### Pagamentos
 - **Registrar pagamento** de parcelas pendentes ou atrasadas
+- **Pagamento parcial** — pode pagar valor menor que a parcela
+- Ver multa e juros de mora calculados automaticamente para parcelas atrasadas
 
 ### O que o vendedor NAO pode fazer
 - Ver rotas (pagina de gestao de rotas)
+- Cancelar emprestimos
 - Acessar caixa, relatorios ou configuracoes
 - Ver dados de outros vendedores ou de rotas que nao sao dele
+- Definir limite de credito de clientes (campo oculto para vendedor)
 
 ---
 
@@ -182,11 +205,20 @@ Todos os emprestimos ativos do vendedor: cliente, rota, valor da parcela, parcel
 - Cliente aparece no mapa apos salvar
 - Link **"Abrir no Maps"** no detalhe do cliente
 
+### Limite de Credito por Cliente
+- Campo opcional no cadastro do cliente (visivel apenas para admin/gerente)
+- Se definido, o sistema valida ao criar emprestimo: soma dos emprestimos ativos + novo <= limite
+- Se nao definido, o sistema usa o limite maximo da rota como referencia
+- Mensagem clara: "Limite de credito do cliente excedido. Ativos: R$ X / Limite: R$ Y"
+
 ### Criacao de Emprestimo
 1. Selecionar rota → campos pre-preenchidos pela configuracao (taxa, periodicidade, parcelas)
 2. Selecionar cliente e informar valor principal
 3. Sistema calcula e exibe previa: valor total com juros e valor da parcela
-4. Se valor exceder limite da rota, alerta visual + bloqueio no servidor
+4. Validacoes automaticas:
+   - Valor excede limite da rota? → alerta visual + bloqueio no servidor
+   - Saldo do caixa insuficiente? → bloqueio com mensagem de saldo atual
+   - Limite de credito do cliente excedido? → bloqueio com detalhamento
 5. Ao salvar, o sistema automaticamente:
    - Calcula valor total e valor da parcela
    - Gera todas as parcelas com vencimentos
@@ -194,11 +226,81 @@ Todos os emprestimos ativos do vendedor: cliente, rota, valor da parcela, parcel
 
 ### Registro de Pagamento
 1. No detalhe do emprestimo, clicar **"Pagar"** na parcela
-2. Valor pre-preenchido, escolher forma (dinheiro/pix/transferencia)
-3. Ao salvar, o sistema automaticamente:
+2. Sistema exibe:
+   - Resumo da parcela (cliente, valor, vencimento, rota, status)
+   - Se ja houve pagamentos parciais: valor ja pago e valor restante
+   - Se parcela atrasada: calculo de multa e juros de mora (bloco amarelo)
+   - Historico de pagamentos anteriores desta parcela
+3. Valor pre-preenchido (com acrescimos se atrasada)
+4. Pode informar valor parcial — a parcela so sera marcada como paga quando o total cobrir o valor integral
+5. Ao salvar, o sistema automaticamente:
    - Registra entrada no caixa da rota
-   - Marca parcela como paga
-   - Se era a ultima parcela, marca emprestimo como quitado
+   - Se total pago >= valor: marca parcela como paga
+   - Se era a ultima parcela: marca emprestimo como quitado
+
+### Pagamento Parcial
+- Ao registrar pagamento, pode informar qualquer valor > 0
+- O sistema rastreia todos os pagamentos de cada parcela
+- Na tabela de parcelas do emprestimo, mostra:
+  - **Pago**: valor total ja recebido (em verde)
+  - **Resta**: valor restante (em amarelo)
+- A parcela so vira "paga" quando soma dos pagamentos >= valor da parcela
+- Dica no formulario explica o funcionamento
+
+### Multa e Juros de Mora
+- Configurados por rota na pagina de Configuracoes:
+  - **Multa Atraso (%)**: percentual fixo sobre o valor restante
+  - **Juros Mora/Dia (%)**: percentual diario sobre o valor restante
+- Ao abrir o formulario de pagamento de parcela atrasada:
+  - Calcula automaticamente multa + juros baseado nos dias de atraso
+  - Exibe bloco detalhado: valor original, + multa, + juros, = total
+  - Pre-preenche o campo valor com o total com acrescimos
+- O usuario pode alterar o valor antes de confirmar
+
+### Cancelamento de Emprestimo
+1. No detalhe do emprestimo, admin clica **"Cancelar Emprestimo"** (botao vermelho)
+2. Tela de confirmacao exibe:
+   - Resumo do emprestimo (valor, parcelas, status)
+   - Aviso: "Esta acao nao pode ser desfeita"
+3. Admin informa motivo obrigatorio
+4. Ao confirmar, o sistema:
+   - Calcula estorno: valor_principal - total ja pago
+   - Registra entrada no caixa (movimentacao tipo "ajuste")
+   - Cancela todas as parcelas pendentes/atrasadas
+   - Parcelas ja pagas permanecem como "paga"
+   - Marca emprestimo como "cancelado"
+   - Registra motivo no campo observacao
+
+### Aporte de Capital no Caixa
+1. Na pagina de Caixa, clicar **"Aporte"** na rota desejada
+2. Informar valor e descricao
+3. Ao confirmar:
+   - Registra movimentacao de entrada (origem "aporte")
+   - Saldo do caixa aumenta
+- Disponivel para Admin e Gerente
+
+### Retirada de Capital do Caixa
+1. Na pagina de Caixa, clicar **"Retirada"** na rota desejada
+2. Informar valor e descricao
+3. Ao confirmar:
+   - Registra movimentacao de saida (origem "retirada")
+   - Saldo do caixa diminui
+- Disponivel apenas para Admin
+
+### Gestao de Rotas
+- **Criar rota:** Admin acessa Rotas > "Nova Rota", informa nome, descricao e se esta ativa
+- **Editar rota:** Na lista de rotas, clicar "Editar" para alterar nome, descricao ou ativar/desativar
+- **Configurar rota:** Na pagina de Configuracoes, definir taxa, periodicidade, parcelas, limite, multa e juros
+- Disponivel apenas para Admin
+
+### Marcacao Automatica de Inadimplencia
+- O command `atualizar_parcelas` deve ser rodado diariamente
+- Marca parcelas pendentes com vencimento passado como "atrasada"
+- Marca emprestimos ativos com parcelas atrasadas como "inadimplente"
+- Pode ser automatizado via cron job:
+  ```
+  0 6 * * * cd /caminho/systempaytec && /caminho/myenv/bin/python manage.py atualizar_parcelas
+  ```
 
 ---
 
@@ -209,7 +311,7 @@ Todos os emprestimos ativos do vendedor: cliente, rota, valor da parcela, parcel
 2. Consultar **Cobrancas de hoje** no dashboard
 3. Abrir **Mapa** para planejar a rota de visitas
 4. Em cada cliente:
-   - Registrar pagamento das parcelas do dia
+   - Registrar pagamento das parcelas do dia (total ou parcial)
    - Se novo cliente, cadastrar com GPS
    - Se necessario, criar novo emprestimo
 5. Acompanhar **Recebido Hoje** para controle
@@ -218,14 +320,18 @@ Todos os emprestimos ativos do vendedor: cliente, rota, valor da parcela, parcel
 1. Verificar **desempenho dos vendedores** no dashboard
 2. Conferir **parcelas dos proximos 7 dias** para planejar a semana
 3. Monitorar **rotas** e identificar problemas (inadimplencia alta, caixa baixo)
-4. Acessar **relatorios** para visao mensal
+4. Realizar **aportes** nas rotas que precisam de capital
+5. Acessar **relatorios** para visao mensal
 
 ### Admin (gestao)
 1. Analisar **indicadores financeiros** no dashboard
 2. Verificar **recebimentos do dia**
 3. Acompanhar **inadimplentes** e tomar decisoes
-4. Ajustar **configuracoes** das rotas conforme necessidade
-5. Consultar **relatorios** para decisoes estrategicas
+4. **Cancelar** emprestimos problematicos quando necessario
+5. Realizar **aportes e retiradas** nas rotas
+6. Ajustar **configuracoes** das rotas (taxa, limite, multa, juros)
+7. **Criar novas rotas** conforme expansao do negocio
+8. Consultar **relatorios** para decisoes estrategicas
 
 ---
 
@@ -238,7 +344,7 @@ O sistema garante que cada empresa ve **apenas seus proprios dados**:
 
 ---
 
-## Regras de Negocio
+## Regras de Negocio — Resumo
 
 | Regra | Descricao |
 |---|---|
@@ -250,5 +356,12 @@ O sistema garante que cada empresa ve **apenas seus proprios dados**:
 | **Entrada automatica no caixa** | Ao registrar pagamento, valor e creditado no caixa da rota |
 | **Quitacao automatica** | Ao pagar ultima parcela, emprestimo e marcado como quitado |
 | **Limite por rota** | Valor principal nao pode exceder o limite maximo configurado na rota |
+| **Limite por cliente** | Soma de emprestimos ativos nao pode exceder limite de credito do cliente |
+| **Validacao de saldo** | Caixa da rota deve ter saldo suficiente para conceder emprestimo |
 | **Vencimento automatico (vendedor)** | Vendedor nao escolhe data — 1o vencimento e sempre amanha |
 | **Config pre-preenche formulario** | Ao selecionar rota, taxa/parcelas/periodicidade sao preenchidos da configuracao |
+| **Pagamento parcial** | Aceita valor menor que a parcela; quitacao so quando soma >= valor |
+| **Multa e juros automaticos** | Calculados e sugeridos ao pagar parcela atrasada |
+| **Cancelamento com estorno** | Admin cancela com motivo; estorno proporcional no caixa |
+| **Inadimplencia automatica** | Command diario marca parcelas vencidas e emprestimos com atraso |
+| **Aporte e retirada** | Movimentacoes manuais no caixa com rastreabilidade total |

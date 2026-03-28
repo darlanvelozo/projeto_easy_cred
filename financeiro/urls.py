@@ -7,4 +7,6 @@ urlpatterns = [
     path('pagamento/<int:parcela_id>/', views.registrar_pagamento, name='registrar_pagamento'),
     path('caixa/', views.caixa_lista, name='caixa_lista'),
     path('caixa/<int:rota_id>/', views.caixa_movimentacoes, name='caixa_movimentacoes'),
+    path('caixa/<int:rota_id>/aporte/', views.caixa_aporte, name='caixa_aporte'),
+    path('caixa/<int:rota_id>/retirada/', views.caixa_retirada, name='caixa_retirada'),
 ]

@@ -8,7 +8,7 @@ class ClienteForm(forms.ModelForm):
         model = Cliente
         fields = [
             'nome', 'cpf', 'telefone', 'rota', 'endereco', 'bairro',
-            'cidade', 'uf', 'latitude', 'longitude', 'ativo',
+            'cidade', 'uf', 'latitude', 'longitude', 'limite_credito', 'ativo',
         ]
         widgets = {
             'nome':      forms.TextInput(attrs={'placeholder': 'Nome completo'}),
@@ -20,6 +20,7 @@ class ClienteForm(forms.ModelForm):
             'uf':        forms.TextInput(attrs={'placeholder': 'UF', 'maxlength': '2'}),
             'latitude':  forms.NumberInput(attrs={'placeholder': '-00.0000000', 'step': '0.0000001'}),
             'longitude': forms.NumberInput(attrs={'placeholder': '-00.0000000', 'step': '0.0000001'}),
+            'limite_credito': forms.NumberInput(attrs={'placeholder': '0,00', 'step': '0.01', 'min': '0'}),
         }
 
     def __init__(self, *args, empresa=None, usuario=None, **kwargs):

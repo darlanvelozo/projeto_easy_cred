@@ -13,13 +13,13 @@
 ### Usuarios e Perfis
 | Perfil | O que pode fazer |
 |---|---|
-| **Admin** | Tudo: configuracoes, relatorios, CRUD completo, gestao de equipe |
-| **Gerente** | Gerencia rotas, clientes, emprestimos, caixa e relatorios |
+| **Admin** | Tudo: configuracoes, relatorios, CRUD completo, gestao de equipe, cancelamentos, retiradas |
+| **Gerente** | Gerencia rotas, clientes, emprestimos, caixa (aportes) e relatorios |
 | **Vendedor** | Opera na rota: cria emprestimos, registra pagamentos, ve seus proprios dados |
 
 ### Rota
 - Territorio/carteira de clientes.
-- Possui uma **ConfiguracaoRota** (taxa de juros, periodicidade, num. parcelas, limite maximo).
+- Possui uma **ConfiguracaoRota** (taxa de juros, periodicidade, num. parcelas, limite maximo, multa, juros de mora).
 - Possui um **CaixaRota** (saldo consolidado da rota).
 - Vendedores sao vinculados a rotas via **VendedorRota**.
 
@@ -27,6 +27,7 @@
 - Pertence a uma empresa e pode estar vinculado a uma rota.
 - Pode ter multiplos emprestimos.
 - Possui campos opcionais de `latitude` e `longitude` para visualizacao em mapa.
+- Possui campo opcional `limite_credito` para controle individual de credito.
 - A localizacao pode ser capturada pelo GPS do celular do vendedor no momento do cadastro.
 
 ### Emprestimo
@@ -36,14 +37,17 @@
 
 ### Parcela
 - Divisao do emprestimo em pagamentos periodicos.
-- Status: `pendente`, `paga`, `atrasada`.
+- Status: `pendente`, `paga`, `atrasada`, `cancelada`.
+- Pode receber multiplos pagamentos parciais — so vira "paga" quando a soma dos pagamentos >= valor.
 
 ### Pagamento
 - Registro de um valor recebido referente a uma parcela.
+- Uma parcela pode ter multiplos pagamentos (pagamentos parciais).
 
 ### MovimentacaoFinanceira
 - Registro de toda entrada ou saida no caixa da rota.
 - **Unica porta de alteracao do saldo** — o saldo nunca e alterado diretamente.
+- Origens: `pagamento`, `emprestimo`, `aporte`, `retirada`, `ajuste`.
 
 ---
 
@@ -57,6 +61,8 @@ Usuario preenche formulario
         v
 [Validacao do Formulario]
    - Valor principal <= limite maximo da rota? (se configurado)
+   - Saldo do caixa >= valor principal? (se nao, bloqueia)
+   - Limite de credito do cliente nao ultrapassado?
    - Todos os campos obrigatorios preenchidos?
         |
         v
@@ -84,44 +90,225 @@ Usuario preenche formulario
 
 **Resultado:** 1 emprestimo + N parcelas + 1 movimentacao de saida no caixa.
 
+**Validacoes que impedem a criacao:**
+- Caixa insuficiente: "Caixa da rota insuficiente. Saldo: R$ X"
+- Limite da rota excedido: "Valor excede o limite da rota: maximo R$ X"
+- Limite de credito do cliente excedido: "Limite de credito do cliente excedido. Ativos: R$ X / Limite: R$ Y"
+
 ---
 
-### 2.2 Registrar Pagamento
+### 2.2 Registrar Pagamento (com suporte a pagamento parcial)
 
 ```
 Usuario clica "Pagar" em uma parcela
         |
         v
+[Calculo de valores]
+   - Soma pagamentos anteriores desta parcela (total_pago)
+   - Calcula valor_restante = valor - total_pago
+   - Se parcela esta atrasada:
+     - Calcula multa: valor_restante * multa_atraso / 100
+     - Calcula juros mora: valor_restante * juros_mora_dia / 100 * dias_atraso
+     - Sugere valor com acrescimos
+        |
+        v
 [Validacao]
-   - Parcela ja esta paga? Se sim, bloqueia.
+   - Parcela ja esta paga ou cancelada? Se sim, bloqueia.
+   - Valor recebido > 0?
         |
         v
 [Pagamento.save()] — Grava valor, forma, quem recebeu
         |
         v
 [Signal post_save: registrar_entrada_caixa]
-   - Busca o CaixaRota da rota (via parcela -> emprestimo -> rota)
    - Registra MovimentacaoFinanceira tipo "entrada", origem "pagamento"
-   - Grava saldo_anterior e saldo_posterior
    - Atualiza saldo do CaixaRota (saldo += valor do pagamento)
         |
         v
-[View: atualiza parcela]
-   - Marca parcela como "paga"
-   - Registra data/hora do pagamento (pago_em)
+[View: verifica se parcela foi totalmente paga]
+   - novo_total_pago = total_pago + valor_recebido
+   - Se novo_total_pago >= valor da parcela:
+       Marca parcela como "paga" + registra pago_em
+   - Se nao: parcela continua "pendente" ou "atrasada"
         |
         v
-[View: verifica quitacao]
-   - Conta parcelas restantes (nao pagas) do emprestimo
+[View: verifica quitacao do emprestimo]
+   - Conta parcelas restantes (nao pagas e nao canceladas)
    - Se ZERO parcelas pendentes:
        emprestimo.status = "quitado"
 ```
 
-**Resultado:** 1 pagamento + 1 movimentacao de entrada no caixa + parcela paga + (possivelmente) emprestimo quitado.
+**Resultado:** 1 pagamento + 1 movimentacao de entrada no caixa + (possivelmente) parcela paga + (possivelmente) emprestimo quitado.
 
 ---
 
-### 2.3 Selecionar Rota no Formulario de Emprestimo
+### 2.3 Pagamento Parcial
+
+```
+Exemplo: Parcela de R$ 100,00
+
+Pagamento 1: R$ 40,00
+   -> total_pago = 40, valor_restante = 60
+   -> parcela continua "pendente" (ou "atrasada")
+   -> entrada de R$ 40 no caixa
+
+Pagamento 2: R$ 35,00
+   -> total_pago = 75, valor_restante = 25
+   -> parcela continua "pendente"
+   -> entrada de R$ 35 no caixa
+
+Pagamento 3: R$ 25,00
+   -> total_pago = 100, valor_restante = 0
+   -> parcela marcada como "paga"
+   -> entrada de R$ 25 no caixa
+```
+
+- Historico de todos os pagamentos parciais e visivel no formulario de pagamento e no detalhe do emprestimo.
+- A coluna "Pago" na tabela de parcelas mostra o total ja recebido e o valor restante.
+
+---
+
+### 2.4 Multa e Juros de Mora
+
+```
+Parcela atrasada (vencimento < hoje)
+        |
+        v
+[Calculo automatico no formulario de pagamento]
+   - dias_atraso = hoje - vencimento
+   - multa = valor_restante * multa_atraso% (configurado na rota)
+   - juros = valor_restante * juros_mora_dia% * dias_atraso
+   - valor_sugerido = valor_restante + multa + juros
+        |
+        v
+[Exibicao no formulario]
+   - Mostra bloco amarelo com detalhamento:
+     - Valor original restante
+     - + Multa (X%)
+     - + Juros de mora (Y% x Z dias)
+     - = Total com acrescimos
+   - Campo "valor" pre-preenchido com total + acrescimos
+```
+
+**Configuracao:** campos `multa_atraso` e `juros_mora_dia` na ConfiguracaoRota, editaveis na pagina de Configuracoes pelo admin.
+
+**Importante:** os acrescimos sao **sugestivos** — o valor pre-preenche o campo, mas o usuario pode alterar. O valor efetivamente recebido e o que o usuario digitar.
+
+---
+
+### 2.5 Cancelamento de Emprestimo
+
+```
+Admin clica "Cancelar Emprestimo" no detalhe
+        |
+        v
+[Tela de confirmacao]
+   - Exibe resumo do emprestimo
+   - Campo obrigatorio: motivo do cancelamento
+   - Aviso: "Esta acao nao pode ser desfeita"
+        |
+        v
+[Calculo do estorno]
+   - total_pago = soma de todos os pagamentos do emprestimo
+   - valor_estorno = valor_principal - total_pago
+   - Se total_pago > valor_principal: estorno = 0
+        |
+        v
+[Estorno no caixa] (se valor_estorno > 0)
+   - Registra MovimentacaoFinanceira tipo "entrada", origem "ajuste"
+   - Descricao: "Cancelamento emprestimo #X — motivo"
+   - Atualiza saldo do CaixaRota
+        |
+        v
+[Cancelar parcelas]
+   - Todas as parcelas com status "pendente" ou "atrasada"
+     sao marcadas como "cancelada"
+   - Parcelas ja pagas permanecem como "paga"
+        |
+        v
+[Marcar emprestimo]
+   - emprestimo.status = "cancelado"
+   - Motivo adicionado ao campo observacao
+```
+
+**Resultado:** emprestimo cancelado + parcelas pendentes canceladas + estorno parcial no caixa.
+
+**Permissao:** somente Admin pode cancelar emprestimos.
+
+---
+
+### 2.6 Aporte de Capital no Caixa
+
+```
+Admin ou Gerente acessa Caixa > Aporte
+        |
+        v
+[Formulario]
+   - Valor do aporte (obrigatorio, > 0)
+   - Descricao (obrigatorio)
+        |
+        v
+[Registrar movimentacao]
+   - MovimentacaoFinanceira tipo "entrada", origem "aporte"
+   - saldo_posterior = saldo_anterior + valor
+   - Atualiza CaixaRota.saldo
+```
+
+**Resultado:** saldo do caixa aumenta + movimentacao registrada.
+
+---
+
+### 2.7 Retirada de Capital do Caixa
+
+```
+Admin acessa Caixa > Retirada
+        |
+        v
+[Formulario]
+   - Valor da retirada (obrigatorio, > 0)
+   - Descricao (obrigatorio)
+        |
+        v
+[Registrar movimentacao]
+   - MovimentacaoFinanceira tipo "saida", origem "retirada"
+   - saldo_posterior = saldo_anterior - valor
+   - Atualiza CaixaRota.saldo
+```
+
+**Resultado:** saldo do caixa diminui + movimentacao registrada.
+
+**Permissao:** somente Admin pode fazer retiradas.
+
+---
+
+### 2.8 Marcacao Automatica de Inadimplencia
+
+```
+Management command: python manage.py atualizar_parcelas
+        |
+        v
+[Etapa 1: Parcelas atrasadas]
+   - Busca todas as parcelas com status="pendente"
+     e vencimento < hoje
+   - Marca como status="atrasada"
+        |
+        v
+[Etapa 2: Emprestimos inadimplentes]
+   - Busca emprestimos com status="ativo"
+     que possuem parcelas com status="atrasada"
+   - Marca como status="inadimplente"
+```
+
+**Execucao:** deve ser rodado diariamente (via cron job ou task scheduler).
+
+Exemplo de cron para rodar todo dia as 6h:
+```
+0 6 * * * cd /caminho/systempaytec && /caminho/myenv/bin/python manage.py atualizar_parcelas
+```
+
+---
+
+### 2.9 Selecionar Rota no Formulario de Emprestimo
 
 ```
 Usuario seleciona uma rota no dropdown
@@ -148,7 +335,7 @@ Usuario seleciona uma rota no dropdown
 
 ---
 
-### 2.4 Vendedor Cria Emprestimo (formulario simplificado)
+### 2.10 Vendedor Cria Emprestimo (formulario simplificado)
 
 ```
 Vendedor preenche formulario
@@ -168,13 +355,14 @@ Vendedor preenche formulario
         v
 [Validacao + criacao]
    - Mesma cadeia do fluxo 2.1 (calculo, parcelas, caixa)
+   - Inclui validacao de saldo e limite de credito
 ```
 
 **Resultado:** vendedor tem interface simplificada, sem precisar definir datas.
 
 ---
 
-### 2.5 Mapa de Clientes
+### 2.11 Mapa de Clientes
 
 ```
 Usuario acessa /clientes/mapa/
@@ -196,11 +384,9 @@ Usuario acessa /clientes/mapa/
    - Mapa centralizado e com zoom ajustado aos marcadores
 ```
 
-**Resultado:** visualizacao geografica dos clientes da rota.
-
 ---
 
-### 2.6 Captura de GPS no Cadastro de Cliente
+### 2.12 Captura de GPS no Cadastro de Cliente
 
 ```
 Vendedor clica "Usar GPS" no formulario de cliente
@@ -221,11 +407,9 @@ Vendedor clica "Usar GPS" no formulario de cliente
    - Cliente aparece no mapa automaticamente
 ```
 
-**Resultado:** localizacao do cliente capturada no campo pelo vendedor.
-
 ---
 
-### 2.7 Salvar Configuracao da Rota
+### 2.13 Salvar Configuracao da Rota
 
 ```
 Admin edita campos na pagina de Configuracoes
@@ -234,18 +418,42 @@ Admin edita campos na pagina de Configuracoes
 [POST: salvar_config_{rota_id}]
    - Cria ou atualiza a ConfiguracaoRota da rota
    - Valores salvos: taxa_juros_padrao, periodicidade_padrao,
-     num_parcelas_padrao, limite_emprestimo_max
+     num_parcelas_padrao, limite_emprestimo_max,
+     multa_atraso, juros_mora_dia
         |
         v
 [Efeito no sistema]
    - Proximos emprestimos criados nessa rota usarao esses valores como padrao
    - Limite maximo sera validado na criacao de novos emprestimos
+   - Multa e juros serao aplicados em pagamentos de parcelas atrasadas
    - Emprestimos existentes NAO sao afetados
 ```
 
 ---
 
-### 2.8 Login e Redirecionamento
+### 2.14 CRUD de Rotas
+
+```
+Admin acessa Rotas > Nova Rota
+        |
+        v
+[Formulario]
+   - Nome (obrigatorio)
+   - Descricao (opcional)
+   - Ativa (checkbox)
+        |
+        v
+[Salvar]
+   - Cria a Rota vinculada a empresa do admin
+   - Redireciona para detalhe da rota
+   - A ConfiguracaoRota pode ser definida na pagina de Configuracoes
+```
+
+Admin tambem pode editar rotas existentes (nome, descricao, ativar/desativar).
+
+---
+
+### 2.15 Login e Redirecionamento
 
 ```
 Usuario faz login
@@ -260,7 +468,7 @@ Usuario faz login
    - superuser  -> /admin/ (Django Admin)
    - admin      -> Dashboard Admin (visao completa da empresa)
    - gerente    -> Dashboard Gerente (rotas, vendedores, parcelas proximas)
-   - vendedor   -> Dashboard Vendedor (minha carteira, cobranças do dia)
+   - vendedor   -> Dashboard Vendedor (minha carteira, cobrancas do dia)
 ```
 
 ---
@@ -273,6 +481,7 @@ O sistema usa o decorator `@requer_perfil()` em cada view. Superusers sempre pas
 |---|:---:|:---:|:---:|
 | Dashboard proprio | Sim | Sim | Sim |
 | Listar rotas | Sim | Sim | - |
+| Criar/editar rota | Sim | - | - |
 | Detalhe da rota | Sim | Sim | - |
 | Listar clientes | Sim | Sim | Sim* |
 | Criar/editar cliente | Sim | Sim | Sim* |
@@ -281,9 +490,12 @@ O sistema usa o decorator `@requer_perfil()` em cada view. Superusers sempre pas
 | Listar emprestimos | Sim | Sim | Sim* |
 | Criar emprestimo | Sim | Sim | Sim** |
 | Detalhe emprestimo | Sim | Sim | Sim* |
+| Cancelar emprestimo | Sim | - | - |
 | Registrar pagamento | Sim | Sim | Sim |
 | Caixa (saldos) | Sim | Sim | - |
 | Movimentacoes do caixa | Sim | Sim | - |
+| Aporte no caixa | Sim | Sim | - |
+| Retirada do caixa | Sim | - | - |
 | Relatorios | Sim | Sim | - |
 | Configuracoes (editar) | Sim | - | - |
 
@@ -296,7 +508,7 @@ O sistema usa o decorator `@requer_perfil()` em cada view. Superusers sempre pas
 - **Emprestimos:** ve apenas emprestimos onde ele e o vendedor.
 - **Rotas:** no formulario de emprestimo e cliente, so aparecem as rotas dele.
 - **Mapa:** ve apenas clientes das suas rotas com localizacao cadastrada.
-- **Dashboard:** metricas pessoais (minha carteira, cobranças do dia, meus inadimplentes).
+- **Dashboard:** metricas pessoais (minha carteira, cobrancas do dia, meus inadimplentes).
 - **Formulario de emprestimo:** data do 1o vencimento e calculada automaticamente (amanha).
 
 ---
@@ -327,11 +539,40 @@ Exemplo: emprestimo de 4 parcelas semanais com 1o vencimento em 01/04:
 - Parcela 3: 15/04
 - Parcela 4: 22/04
 
+### Multa e Juros de Mora
+Aplicados automaticamente ao pagar parcela atrasada:
+```
+dias_atraso = hoje - data_vencimento
+multa = valor_restante * (multa_atraso / 100)
+juros = valor_restante * (juros_mora_dia / 100) * dias_atraso
+total_com_acrescimos = valor_restante + multa + juros
+```
+
+- `multa_atraso`: percentual fixo sobre o valor restante (ex: 2%)
+- `juros_mora_dia`: percentual diario sobre o valor restante (ex: 0.033%)
+- Configurados por rota na pagina de Configuracoes
+- O valor sugerido e pre-preenchido no formulario, mas o usuario pode alterar
+
 ### Limite de Emprestimo
-- Configuravel por rota no campo `limite_emprestimo_max`.
-- Se definido, o `valor_principal` nao pode ultrapassar esse valor.
-- Validado no frontend (alerta visual) e no backend (rejeita o formulario).
-- Se nao definido, nao ha limite.
+Validado em 3 niveis ao criar emprestimo:
+1. **Limite da rota** (`limite_emprestimo_max`): valor principal nao pode ultrapassar
+2. **Limite de credito do cliente** (`limite_credito`): soma de emprestimos ativos + novo <= limite
+3. **Saldo do caixa**: caixa deve ter saldo >= valor principal
+
+Ordem de prioridade para limite de credito:
+- Se o cliente tem `limite_credito` definido, usa esse
+- Se nao, usa o `limite_emprestimo_max` da rota
+- Se nenhum esta definido, nao ha limite
+
+### Validacao de Saldo no Caixa
+Ao criar emprestimo:
+```
+Se caixa.saldo < valor_principal:
+   BLOQUEIA — "Caixa da rota insuficiente. Saldo: R$ X"
+
+Se a rota nao tem caixa:
+   BLOQUEIA — "Esta rota ainda nao possui caixa. Realize um aporte primeiro."
+```
 
 ---
 
@@ -350,8 +591,9 @@ Isso garante:
 |---|---|---|
 | Saida | `emprestimo` | Ao criar um emprestimo (valor_principal sai do caixa) |
 | Entrada | `pagamento` | Ao registrar pagamento de parcela (valor entra no caixa) |
-| Entrada | `aporte` | Aporte de capital inicial na rota |
-| Saida | `retirada` | Retirada de dinheiro do caixa |
+| Entrada | `aporte` | Ao realizar aporte de capital na rota |
+| Saida | `retirada` | Ao realizar retirada de dinheiro do caixa |
+| Entrada | `ajuste` | Ao cancelar emprestimo (estorno) |
 | Entrada/Saida | `ajuste` | Ajuste manual pelo admin |
 
 ### Cadeia de Rastreio
@@ -380,17 +622,22 @@ Ou seja: dado qualquer movimentacao, e possivel rastrear ate o cliente, vendedor
          |                    |
          v                    v
      [QUITADO]         [INADIMPLENTE]
-                              |
-                              v
-                       [CANCELADO]
-                    (acao manual do admin)
+                         /         \
+                        /           \
+              Todas parcelas    Admin cancela
+              restantes pagas   com motivo
+                    |                |
+                    v                v
+               [QUITADO]       [CANCELADO]
+                              (estorno no caixa)
 ```
 
 | Transicao | Gatilho |
 |---|---|
 | Ativo -> Quitado | Automatico: ao pagar a ultima parcela, a view verifica se restam pendentes. Se zero, marca como quitado. |
-| Ativo -> Inadimplente | Manual/batch: quando parcelas vencem sem pagamento (parcela.status muda para "atrasada"). |
-| Qualquer -> Cancelado | Acao manual do admin. |
+| Ativo -> Inadimplente | Automatico: command `atualizar_parcelas` marca parcelas vencidas como atrasadas e emprestimos com atraso como inadimplentes. |
+| Inadimplente -> Quitado | Automatico: se todas as parcelas restantes forem pagas (via pagamentos posteriores). |
+| Ativo/Inadimplente -> Cancelado | Manual: admin cancela com motivo obrigatorio. Estorno proporcional no caixa. |
 
 ---
 
@@ -398,26 +645,35 @@ Ou seja: dado qualquer movimentacao, e possivel rastrear ate o cliente, vendedor
 
 ```
     [PENDENTE]
-     /      \
-    /        \
-  Pagamento   Vencimento passa
-  registrado   sem pagamento
-     |              |
-     v              v
-   [PAGA]      [ATRASADA]
-                    |
-                  Pagamento
-                  registrado
-                    |
-                    v
-                  [PAGA]
+     /   |    \
+    /    |     \
+  Pago   |   Vencimento
+  total  |   passa sem pgto
+   |     |        |
+   v     |        v
+ [PAGA]  |   [ATRASADA]
+         |    /      \
+    Pago |   /      Pago
+  parcial|  Pago     total
+         |  parcial    |
+         v    |        v
+   (continua  |     [PAGA]
+   pendente/  |
+   atrasada)  v
+         (continua
+          atrasada)
+
+   [CANCELADA] <-- emprestimo cancelado
 ```
 
 | Transicao | Gatilho |
 |---|---|
-| Pendente -> Paga | Pagamento registrado na view `registrar_pagamento` |
-| Pendente -> Atrasada | Data de vencimento ultrapassada (processo batch ou verificacao manual) |
-| Atrasada -> Paga | Pagamento registrado mesmo apos vencimento |
+| Pendente -> Paga | Soma dos pagamentos >= valor da parcela |
+| Pendente -> Atrasada | Command `atualizar_parcelas` (vencimento < hoje) |
+| Atrasada -> Paga | Soma dos pagamentos >= valor da parcela |
+| Pendente/Atrasada -> Cancelada | Emprestimo cancelado pelo admin |
+
+**Pagamento parcial:** a parcela so muda de status quando a soma de todos os pagamentos cobre o valor integral. Ate la, continua com seu status atual.
 
 ---
 
@@ -430,26 +686,35 @@ Ou seja: dado qualquer movimentacao, e possivel rastrear ate o cliente, vendedor
 | Gerar todas as parcelas | Ao criar emprestimo (signal `gerar_parcelas`) |
 | Registrar saida no caixa | Ao criar emprestimo (signal `registrar_saida_caixa`) |
 | Registrar entrada no caixa | Ao registrar pagamento (signal `registrar_entrada_caixa`) |
-| Marcar parcela como paga | Ao registrar pagamento (view `registrar_pagamento`) |
-| Marcar emprestimo como quitado | Ao pagar ultima parcela (view `registrar_pagamento`) |
+| Marcar parcela como paga | Quando soma de pagamentos >= valor (view `registrar_pagamento`) |
+| Marcar emprestimo como quitado | Quando todas as parcelas estao pagas ou canceladas (view `registrar_pagamento`) |
+| Calcular multa e juros de mora | Ao abrir formulario de pagamento de parcela atrasada |
+| Validar saldo do caixa | Ao criar emprestimo (form `clean()`) |
+| Validar limite de credito do cliente | Ao criar emprestimo (form `clean()`) |
+| Estorno no caixa ao cancelar | Ao cancelar emprestimo (view `emprestimo_cancelar`) |
+| Cancelar parcelas pendentes | Ao cancelar emprestimo (view `emprestimo_cancelar`) |
+| Marcar parcelas vencidas como atrasadas | Command `atualizar_parcelas` (roda diariamente) |
+| Marcar emprestimos com atraso como inadimplentes | Command `atualizar_parcelas` (roda diariamente) |
 | Pre-preencher formulario com config da rota | Ao selecionar rota (AJAX no frontend) |
 | Validar limite maximo da rota | Ao submeter formulario (backend + frontend) |
 | Redirecionar para dashboard correto | Ao fazer login (view `dashboard_redirect`) |
 | Bloquear acesso por perfil | Em toda requisicao (decorator `@requer_perfil`) |
 | Filtrar dados por empresa | Em toda view (queryset filtrado por `empresa`) |
 | Filtrar dados do vendedor | Nas views de emprestimo e cliente (ve so os seus) |
-| Calcular data 1o vencimento (vendedor) | Ao submeter formulario de emprestimo como vendedor (= amanha) |
-| Captura GPS do cliente | Ao clicar "Usar GPS" no formulario (navigator.geolocation) |
+| Calcular data 1o vencimento (vendedor) | Ao submeter formulario como vendedor (= amanha) |
+| Captura GPS do cliente | Ao clicar "Usar GPS" (navigator.geolocation) |
 
 ### Manual (usuario precisa fazer)
 | Acao | Quem faz |
 |---|---|
-| Cadastrar empresa e rotas | Admin |
+| Cadastrar empresa | Admin |
+| Criar e editar rotas | Admin |
 | Cadastrar clientes | Admin, Gerente ou Vendedor |
-| Definir configuracao da rota | Admin (pagina de Configuracoes) |
+| Definir configuracao da rota (taxa, parcelas, limite, multa, juros) | Admin (Configuracoes) |
 | Vincular vendedores a rotas | Admin (via Django Admin) |
 | Criar emprestimos | Admin, Gerente ou Vendedor |
 | Registrar pagamentos | Admin, Gerente ou Vendedor |
-| Marcar emprestimo como inadimplente | Admin ou Gerente |
-| Cancelar emprestimo | Admin |
-| Aportar capital no caixa | Admin (via Django Admin) |
+| Cancelar emprestimo (com motivo) | Admin |
+| Realizar aporte no caixa | Admin ou Gerente |
+| Realizar retirada do caixa | Admin |
+| Rodar atualizacao de inadimplencia | Cron job ou manual (`python manage.py atualizar_parcelas`) |

@@ -103,8 +103,16 @@ systempaytec/
 - [x] Configuracoes editaveis: empresa + config por rota
 - [x] API AJAX para config da rota (pre-preenchimento de formulario)
 - [x] popular_banco com dados realistas do Piaui (Teresina + Picos)
-- [x] 19 templates, 27 clientes, 32 emprestimos de demonstracao
 - [x] Documentacao: CONTEXT.md, REGRAS_E_FUNCIONAMENTO.md, GUIA_USUARIO.md
+- [x] **Validacao de saldo no caixa** ao criar emprestimo
+- [x] **Limite de credito por cliente** (campo opcional, fallback para limite da rota)
+- [x] **Management command `atualizar_parcelas`** — marca parcelas vencidas e emprestimos inadimplentes
+- [x] **Cancelamento de emprestimo** — estorno no caixa, parcelas canceladas, motivo obrigatorio
+- [x] **Aporte e retirada de caixa** — movimentacoes manuais com rastreabilidade
+- [x] **Pagamento parcial** — multiplos pagamentos por parcela, quitacao quando soma >= valor
+- [x] **Multa e juros de mora** — configurados por rota, calculados automaticamente
+- [x] **CRUD de Rotas completo** — criar e editar rotas pelo admin
+- [x] 23 templates, 27 clientes, 32 emprestimos de demonstracao
 
 ---
 

@@ -63,53 +63,53 @@
 
 ---
 
-## ETAPA 3 — Logica de Negocio Completa
-> **Prioridade: ALTA** — Funcionalidades que faltam para o sistema operar de verdade.
+## ETAPA 3 — Logica de Negocio Completa ✅
+> **Prioridade: ALTA** — Implementado em 2026-03-28.
 
 ### 3.1 Validacao de saldo no caixa
-- [ ] Ao criar emprestimo, verificar se o caixa da rota tem saldo suficiente
-- [ ] Bloquear criacao se saldo < valor_principal
-- [ ] Mensagem clara: "Caixa da rota insuficiente. Saldo: R$ X"
+- [x] Ao criar emprestimo, verificar se o caixa da rota tem saldo suficiente
+- [x] Bloquear criacao se saldo < valor_principal
+- [x] Mensagem clara: "Caixa da rota insuficiente. Saldo: R$ X"
 
 ### 3.2 Marcacao automatica de inadimplencia
-- [ ] Management command `atualizar_parcelas` que roda diariamente
-- [ ] Marca parcelas vencidas como "atrasada"
-- [ ] Marca emprestimos com parcelas atrasadas como "inadimplente"
+- [x] Management command `atualizar_parcelas` que roda diariamente
+- [x] Marca parcelas vencidas como "atrasada"
+- [x] Marca emprestimos com parcelas atrasadas como "inadimplente"
 - [ ] Configurar via cron/celery para rodar todo dia as 6h
 
 ### 3.3 Cancelamento de emprestimo
-- [ ] View para admin cancelar emprestimo
-- [ ] Logica: estorna valor no caixa (movimentacao de entrada tipo "ajuste")
-- [ ] Marca todas as parcelas pendentes como canceladas
-- [ ] Exige motivo obrigatorio (campo observacao)
-- [ ] Emprestimos com parcelas ja pagas: estorno parcial
+- [x] View para admin cancelar emprestimo
+- [x] Logica: estorna valor no caixa (movimentacao de entrada tipo "ajuste")
+- [x] Marca todas as parcelas pendentes como canceladas
+- [x] Exige motivo obrigatorio (campo observacao)
+- [x] Emprestimos com parcelas ja pagas: estorno parcial
 
 ### 3.4 Aporte e retirada de caixa
-- [ ] View para admin/gerente fazer aporte no caixa da rota
-- [ ] View para admin fazer retirada do caixa
-- [ ] Formulario com valor, descricao, tipo
-- [ ] Movimentacao registrada automaticamente
+- [x] View para admin/gerente fazer aporte no caixa da rota
+- [x] View para admin fazer retirada do caixa
+- [x] Formulario com valor, descricao, tipo
+- [x] Movimentacao registrada automaticamente
 
 ### 3.5 Pagamento parcial
-- [ ] Permitir pagar valor menor que a parcela
-- [ ] Campo `valor_restante` na parcela (ou calculado via sum de pagamentos)
-- [ ] Parcela so vira "paga" quando soma dos pagamentos >= valor
-- [ ] Historico de pagamentos parciais visivel no detalhe
+- [x] Permitir pagar valor menor que a parcela
+- [x] Valor restante calculado via sum de pagamentos
+- [x] Parcela so vira "paga" quando soma dos pagamentos >= valor
+- [x] Historico de pagamentos parciais visivel no detalhe
 
 ### 3.6 Multa e juros de mora
-- [ ] Campos `multa_atraso` e `juros_mora_dia` na ConfiguracaoRota
-- [ ] Ao registrar pagamento de parcela atrasada, calcular acrescimo
-- [ ] Exibir valor original vs valor com multa no formulario de pagamento
+- [x] Campos `multa_atraso` e `juros_mora_dia` na ConfiguracaoRota
+- [x] Ao registrar pagamento de parcela atrasada, calcular acrescimo
+- [x] Exibir valor original vs valor com multa no formulario de pagamento
 
 ### 3.7 Limite de credito por cliente
-- [ ] Campo `limite_credito` no model Cliente (opcional)
-- [ ] Ao criar emprestimo, verificar: soma de emprestimos ativos do cliente + novo <= limite
-- [ ] Se nao definido, usa o limite da rota
+- [x] Campo `limite_credito` no model Cliente (opcional)
+- [x] Ao criar emprestimo, verificar: soma de emprestimos ativos do cliente + novo <= limite
+- [x] Se nao definido, usa o limite da rota
 
 ### 3.8 CRUD de Rotas completo
-- [ ] View para admin criar nova rota
-- [ ] Editar rota existente (nome, descricao, ativa)
-- [ ] A ConfiguracaoRota ja e editavel (pagina de Configuracoes)
+- [x] View para admin criar nova rota
+- [x] Editar rota existente (nome, descricao, ativa)
+- [x] A ConfiguracaoRota ja e editavel (pagina de Configuracoes)
 
 ---
 

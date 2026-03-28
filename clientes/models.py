@@ -15,6 +15,10 @@ class Cliente(models.Model):
     uf = models.CharField(max_length=2, blank=True)
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    limite_credito = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text='Limite de credito individual. Se vazio, usa o limite da rota.',
+    )
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 

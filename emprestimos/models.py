@@ -55,6 +55,7 @@ class Parcela(models.Model):
         ('pendente', 'Pendente'),
         ('paga', 'Paga'),
         ('atrasada', 'Atrasada'),
+        ('cancelada', 'Cancelada'),
     ]
 
     emprestimo = models.ForeignKey(Emprestimo, on_delete=models.PROTECT, related_name='parcelas')

@@ -1,12 +1,14 @@
 from decimal import Decimal
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.db.models import Count, Q, Sum
 
 from accounts.decorators import requer_perfil
 from clientes.models import Cliente
 from emprestimos.models import Emprestimo, Parcela
 from .models import Rota, VendedorRota, CaixaRota
+from .forms import RotaForm
 
 
 @login_required
@@ -64,4 +66,48 @@ def rota_detalhe(request, pk):
         'total_inadimplentes': total_inadimplentes,
         'parcelas_atrasadas': parcelas_atrasadas,
         'caixa': caixa,
+    })
+
+
+@login_required
+@requer_perfil('admin')
+def rota_criar(request):
+    empresa = request.user.empresa
+
+    if request.method == 'POST':
+        form = RotaForm(request.POST)
+        if form.is_valid():
+            rota = form.save(commit=False)
+            rota.empresa = empresa
+            rota.save()
+            messages.success(request, f'Rota "{rota.nome}" criada.')
+            return redirect('rotas:detalhe', pk=rota.pk)
+    else:
+        form = RotaForm()
+
+    return render(request, 'rotas/form.html', {
+        'form': form,
+        'titulo': 'Nova Rota',
+    })
+
+
+@login_required
+@requer_perfil('admin')
+def rota_editar(request, pk):
+    empresa = request.user.empresa
+    rota = get_object_or_404(Rota, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        form = RotaForm(request.POST, instance=rota)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Rota "{rota.nome}" atualizada.')
+            return redirect('rotas:detalhe', pk=rota.pk)
+    else:
+        form = RotaForm(instance=rota)
+
+    return render(request, 'rotas/form.html', {
+        'form': form,
+        'titulo': f'Editar Rota — {rota.nome}',
+        'rota': rota,
     })

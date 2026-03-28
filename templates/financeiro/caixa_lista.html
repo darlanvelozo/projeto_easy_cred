@@ -9,6 +9,9 @@
   .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 6px; font-size: .75rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
   .btn:hover { opacity: .85; }
   .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-group { display: flex; gap: .35rem; flex-wrap: wrap; }
 </style>
 {% endblock %}
 
@@ -21,7 +24,7 @@
           <th>Rota</th>
           <th>Saldo Atual</th>
           <th>Atualizado em</th>
-          <th></th>
+          <th>Acoes</th>
         </tr>
       </thead>
       <tbody>
@@ -35,7 +38,13 @@
             {% if rota.caixa %}{{ rota.caixa.atualizado_em|date:"d/m/Y H:i" }}{% else %}—{% endif %}
           </td>
           <td>
-            <a href="{% url 'financeiro:caixa_movimentacoes' rota.pk %}" class="btn btn-outline">Ver movimentações</a>
+            <div class="btn-group">
+              <a href="{% url 'financeiro:caixa_movimentacoes' rota.pk %}" class="btn btn-outline">Movimentacoes</a>
+              <a href="{% url 'financeiro:caixa_aporte' rota.pk %}" class="btn btn-green">Aporte</a>
+              {% if request.user.perfil == 'admin' %}
+              <a href="{% url 'financeiro:caixa_retirada' rota.pk %}" class="btn btn-red">Retirada</a>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% empty %}

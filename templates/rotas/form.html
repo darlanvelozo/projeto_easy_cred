@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block nav_rotas %}active{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+{% block page_sub %}Gerenciar rotas da empresa{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-group { display: flex; flex-direction: column; gap: .3rem; margin-bottom: 1rem; }
+  .form-group label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); }
+  .form-group input, .form-group textarea, .form-group select {
+    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
+    font-size: .875rem; font-family: inherit; background: #fff; transition: border-color .15s;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem 1.25rem; border-radius: 8px; font-size: .875rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
+  .btn:hover { opacity: .85; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .errorlist { list-style: none; padding: 0; margin: .2rem 0 0; }
+  .errorlist li { font-size: .75rem; color: var(--red); }
+  .checkbox-group { display: flex; align-items: center; gap: .5rem; }
+  .checkbox-group input { width: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_nome">Nome da Rota *</label>
+        {{ form.nome }}
+        {{ form.nome.errors }}
+      </div>
+      <div class="form-group">
+        <label for="id_descricao">Descricao</label>
+        {{ form.descricao }}
+        {{ form.descricao.errors }}
+      </div>
+      <div class="form-group">
+        <div class="checkbox-group">
+          {{ form.ativa }}
+          <label for="id_ativa">Rota ativa</label>
+        </div>
+        {{ form.ativa.errors }}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-blue">Salvar</button>
+        <a href="{% url 'rotas:lista' %}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

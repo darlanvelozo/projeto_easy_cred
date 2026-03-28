@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block nav_caixa %}active{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+{% block page_sub %}Saldo atual: R$ {{ caixa.saldo|floatformat:2 }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-group { display: flex; flex-direction: column; gap: .3rem; margin-bottom: 1rem; }
+  .form-group label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); }
+  .form-group input, .form-group textarea {
+    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
+    font-size: .875rem; font-family: inherit; background: #fff; transition: border-color .15s;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem 1.25rem; border-radius: 8px; font-size: .875rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
+  .btn:hover { opacity: .85; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .errorlist { list-style: none; padding: 0; margin: .2rem 0 0; }
+  .errorlist li { font-size: .75rem; color: var(--red); }
+  .info-box {
+    background: {% if tipo == 'aporte' %}#dcfce7{% else %}#fef2f2{% endif %};
+    border: 1px solid {% if tipo == 'aporte' %}#86efac{% else %}#fca5a5{% endif %};
+    border-radius: var(--card-radius);
+    padding: 1rem 1.25rem; margin-bottom: 1.25rem;
+    font-size: .875rem;
+    color: {% if tipo == 'aporte' %}#16a34a{% else %}#dc2626{% endif %};
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="info-box">
+  {% if tipo == 'aporte' %}
+    Aporte de capital na rota "{{ rota.nome }}". O valor sera adicionado ao saldo do caixa.
+  {% else %}
+    Retirada de capital da rota "{{ rota.nome }}". O valor sera subtraido do saldo do caixa.
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="id_valor">Valor (R$) *</label>
+        {{ form.valor }}
+        {{ form.valor.errors }}
+      </div>
+      <div class="form-group">
+        <label for="id_descricao">Descricao *</label>
+        {{ form.descricao }}
+        {{ form.descricao.errors }}
+      </div>
+      <div class="form-actions">
+        {% if tipo == 'aporte' %}
+        <button type="submit" class="btn btn-green">Confirmar Aporte</button>
+        {% else %}
+        <button type="submit" class="btn btn-blue">Confirmar Retirada</button>
+        {% endif %}
+        <a href="{% url 'financeiro:caixa_movimentacoes' rota.pk %}" class="btn btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

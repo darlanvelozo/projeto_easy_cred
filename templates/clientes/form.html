@@ -106,6 +106,15 @@
           {{ form.longitude.errors }}
         </div>
 
+        {% if request.user.perfil != 'vendedor' %}
+        <div class="form-group">
+          <label for="id_limite_credito">Limite de credito (R$)</label>
+          {{ form.limite_credito }}
+          {{ form.limite_credito.errors }}
+          <small style="font-size:.7rem;color:var(--text-muted)">Opcional. Se vazio, usa o limite da rota.</small>
+        </div>
+        {% endif %}
+
         <div class="form-group checkbox-group">
           {{ form.ativo }}
           <label for="id_ativo">Cliente ativo</label>

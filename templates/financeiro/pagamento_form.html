@@ -29,6 +29,14 @@
   .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
   .errorlist { list-style: none; padding: 0; margin: .2rem 0 0; }
   .errorlist li { font-size: .75rem; color: var(--red); }
+  .acrescimo-box {
+    background: #fef9c3; border: 1px solid #fde68a; border-radius: var(--card-radius);
+    padding: 1rem 1.25rem; margin-bottom: 1.25rem; font-size: .85rem; color: #92400e;
+  }
+  .acrescimo-box strong { display: block; margin-bottom: .3rem; }
+  .acrescimo-row { display: flex; justify-content: space-between; margin: .15rem 0; }
+  .pagamentos-anteriores { margin-top: 1.25rem; }
+  .pagamentos-anteriores h4 { font-size: .85rem; font-weight: 600; margin-bottom: .5rem; color: var(--text-secondary); }
   @media (max-width: 480px) { .pay-summary { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
@@ -46,7 +54,7 @@
   </div>
   <div>
     <div class="pay-item-label">Valor da Parcela</div>
-    <div class="pay-item-value" style="color:var(--green)">R$ {{ parcela.valor|floatformat:2 }}</div>
+    <div class="pay-item-value">R$ {{ parcela.valor|floatformat:2 }}</div>
   </div>
   <div>
     <div class="pay-item-label">Vencimento</div>
@@ -63,9 +71,46 @@
       {% else %}<span class="badge badge-yellow">Pendente</span>{% endif %}
     </div>
   </div>
+  {% if total_pago > 0 %}
+  <div>
+    <div class="pay-item-label">Ja pago</div>
+    <div class="pay-item-value" style="color:var(--green)">R$ {{ total_pago|floatformat:2 }}</div>
+  </div>
+  <div>
+    <div class="pay-item-label">Restante</div>
+    <div class="pay-item-value" style="color:var(--red)">R$ {{ valor_restante|floatformat:2 }}</div>
+  </div>
+  {% endif %}
 </div>
 
-<!-- Formulário -->
+<!-- Multa e juros -->
+{% if dias_atraso > 0 and multa_valor > 0 or juros_valor > 0 %}
+<div class="acrescimo-box">
+  <strong>Acrescimos por atraso ({{ dias_atraso }} dia{{ dias_atraso|pluralize:"s" }})</strong>
+  <div class="acrescimo-row">
+    <span>Valor original restante:</span>
+    <span>R$ {{ valor_restante|floatformat:2 }}</span>
+  </div>
+  {% if multa_valor > 0 %}
+  <div class="acrescimo-row">
+    <span>Multa:</span>
+    <span>+ R$ {{ multa_valor|floatformat:2 }}</span>
+  </div>
+  {% endif %}
+  {% if juros_valor > 0 %}
+  <div class="acrescimo-row">
+    <span>Juros de mora ({{ dias_atraso }}d):</span>
+    <span>+ R$ {{ juros_valor|floatformat:2 }}</span>
+  </div>
+  {% endif %}
+  <div class="acrescimo-row" style="font-weight:700;border-top:1px solid #fde68a;padding-top:.3rem;margin-top:.3rem">
+    <span>Total com acrescimos:</span>
+    <span>R$ {{ valor_com_acrescimo|floatformat:2 }}</span>
+  </div>
+</div>
+{% endif %}
+
+<!-- Formulario -->
 <div class="card">
   <div class="card-body">
     <form method="post">
@@ -74,6 +119,7 @@
         <label for="id_valor">Valor recebido (R$) *</label>
         {{ form.valor }}
         {{ form.valor.errors }}
+        <small style="color:var(--text-muted);font-size:.72rem">Pode informar valor parcial. A parcela so sera marcada como paga quando o total recebido cobrir o valor integral.</small>
       </div>
       <div class="form-group">
         <label for="id_forma">Forma de pagamento *</label>
@@ -81,7 +127,7 @@
         {{ form.forma.errors }}
       </div>
       <div class="form-group">
-        <label for="id_observacao">Observação</label>
+        <label for="id_observacao">Observacao</label>
         {{ form.observacao }}
         {{ form.observacao.errors }}
       </div>
@@ -92,4 +138,37 @@
     </form>
   </div>
 </div>
+
+<!-- Pagamentos anteriores -->
+{% if pagamentos_anteriores %}
+<div class="card pagamentos-anteriores">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Pagamentos anteriores desta parcela</div>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Valor</th>
+          <th>Forma</th>
+          <th>Recebido por</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pg in pagamentos_anteriores %}
+        <tr>
+          <td class="td-muted">{{ pg.data_pagamento|date:"d/m/Y H:i" }}</td>
+          <td style="font-weight:600;color:var(--green)">R$ {{ pg.valor|floatformat:2 }}</td>
+          <td>{{ pg.get_forma_display }}</td>
+          <td class="td-muted">{{ pg.recebido_por.get_full_name|default:pg.recebido_por.username }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
