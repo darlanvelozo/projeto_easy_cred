@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Configurações{% endblock %}
+{% block nav_config %}active{% endblock %}
+{% block page_title %}Configurações{% endblock %}
+{% block page_sub %}Dados da empresa e equipe{% endblock %}
+
+{% block extra_head %}
+<style>
+  .section-title { font-size: .9rem; font-weight: 700; margin: 1.5rem 0 .85rem; }
+  .section-title:first-child { margin-top: 0; }
+  .detail-row { display: flex; justify-content: space-between; padding: .65rem 0; border-bottom: 1px solid #f1f5f9; font-size: .875rem; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { color: var(--text-muted); font-weight: 500; }
+  .detail-value { font-weight: 600; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Dados da empresa -->
+<h2 class="section-title">Empresa</h2>
+<div class="card" style="margin-bottom:1.25rem">
+  <div class="card-body">
+    <div class="detail-row">
+      <span class="detail-label">Nome</span>
+      <span class="detail-value">{{ empresa.nome }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">CNPJ</span>
+      <span class="detail-value">{{ empresa.cnpj|default:"—" }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">E-mail</span>
+      <span class="detail-value">{{ empresa.email|default:"—" }}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Telefone</span>
+      <span class="detail-value">{{ empresa.telefone|default:"—" }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Rotas e configurações -->
+<h2 class="section-title">Rotas e configurações</h2>
+<div class="card" style="margin-bottom:1.25rem">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Rota</th>
+          <th>Periodicidade</th>
+          <th>Taxa Juros</th>
+          <th>Parcelas</th>
+          <th>Limite Máx.</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rota in rotas %}
+        <tr>
+          <td style="font-weight:500">{{ rota.nome }}</td>
+          {% if rota.configuracao %}
+          <td class="td-muted">{{ rota.configuracao.get_periodicidade_padrao_display }}</td>
+          <td>{{ rota.configuracao.taxa_juros_padrao }}%</td>
+          <td style="text-align:center">{{ rota.configuracao.num_parcelas_padrao }}x</td>
+          <td class="td-muted">{% if rota.configuracao.limite_emprestimo_max %}R$ {{ rota.configuracao.limite_emprestimo_max|floatformat:2 }}{% else %}—{% endif %}</td>
+          {% else %}
+          <td colspan="4" class="td-muted">Sem configuração</td>
+          {% endif %}
+          <td>
+            {% if rota.ativa %}<span class="badge badge-green">Ativa</span>{% else %}<span class="badge badge-gray">Inativa</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhuma rota.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Equipe -->
+<h2 class="section-title">Equipe</h2>
+<div class="two-col">
+  <div class="card">
+    <div class="card-header"><div><div class="card-title">Gerentes</div><div class="card-sub">{{ gerentes|length }} ativo{{ gerentes|length|pluralize:"s" }}</div></div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Usuário</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for u in gerentes %}
+          <tr>
+            <td style="font-weight:500">{{ u.get_full_name }}</td>
+            <td class="td-muted">{{ u.username }}</td>
+            <td>{% if u.ativo %}<span class="badge badge-green">Ativo</span>{% else %}<span class="badge badge-gray">Inativo</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:1.5rem">Nenhum gerente.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div><div class="card-title">Vendedores</div><div class="card-sub">{{ vendedores|length }} ativo{{ vendedores|length|pluralize:"s" }}</div></div></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Usuário</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for u in vendedores %}
+          <tr>
+            <td style="font-weight:500">{{ u.get_full_name }}</td>
+            <td class="td-muted">{{ u.username }}</td>
+            <td>{% if u.ativo %}<span class="badge badge-green">Ativo</span>{% else %}<span class="badge badge-gray">Inativo</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:1.5rem">Nenhum vendedor.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

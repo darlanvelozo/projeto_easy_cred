@@ -28,7 +28,7 @@
       <tbody>
         {% for rota in rotas %}
         <tr>
-          <td style="font-weight:600">{{ rota.nome }}</td>
+          <td style="font-weight:600"><a href="{% url 'rotas:detalhe' rota.pk %}" style="color:inherit;text-decoration:none">{{ rota.nome }}</a></td>
           <td style="text-align:center">{{ rota.total_vendedores }}</td>
           <td style="text-align:center">{{ rota.total_clientes }}</td>
           <td style="text-align:center">{{ rota.total_emprestimos }}</td>

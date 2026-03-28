@@ -9,10 +9,10 @@ from django.utils import timezone
 
 from .decorators import requer_perfil
 from .models import Usuario
-from rotas.models import Rota, CaixaRota, VendedorRota
+from rotas.models import Rota, CaixaRota, VendedorRota, ConfiguracaoRota
 from clientes.models import Cliente
 from emprestimos.models import Emprestimo, Parcela
-from financeiro.models import Pagamento
+from financeiro.models import Pagamento, MovimentacaoFinanceira
 
 
 # ── Autenticação ──────────────────────────────────────────────────────────────
@@ -367,4 +367,109 @@ def dashboard_vendedor(request):
         'total_emprestimos_ativos': minha_carteira.count(),
         'total_parcelas_hoje': parcelas_hoje.count(),
         'total_inadimplentes': len(inadimplentes_resumo),
+    })
+
+
+# ── Relatórios ───────────────────────────────────────────────────────────────
+
+@login_required
+@requer_perfil('admin', 'gerente')
+def relatorios(request):
+    empresa = request.user.empresa
+    hoje = timezone.localdate()
+    inicio_mes = hoje.replace(day=1)
+
+    # Inadimplência
+    clientes_inadimp = (
+        Cliente.objects.filter(empresa=empresa, emprestimos__status='inadimplente')
+        .distinct().count()
+    )
+    valor_inadimp = (
+        Parcela.objects.filter(emprestimo__rota__empresa=empresa, status='atrasada')
+        .aggregate(t=Sum('valor'))['t'] or Decimal('0')
+    )
+    parcelas_atrasadas = Parcela.objects.filter(
+        emprestimo__rota__empresa=empresa, status='atrasada'
+    ).count()
+
+    # Recebimentos do mês
+    recebido_mes = (
+        Pagamento.objects.filter(
+            parcela__emprestimo__rota__empresa=empresa,
+            data_pagamento__date__gte=inicio_mes,
+        ).aggregate(t=Sum('valor'))['t'] or Decimal('0')
+    )
+    pagamentos_mes = Pagamento.objects.filter(
+        parcela__emprestimo__rota__empresa=empresa,
+        data_pagamento__date__gte=inicio_mes,
+    ).count()
+
+    # Empréstimos concedidos no mês
+    emprestimos_mes = Emprestimo.objects.filter(
+        rota__empresa=empresa, criado_em__date__gte=inicio_mes,
+    ).count()
+    valor_concedido_mes = (
+        Emprestimo.objects.filter(rota__empresa=empresa, criado_em__date__gte=inicio_mes)
+        .aggregate(t=Sum('valor_principal'))['t'] or Decimal('0')
+    )
+
+    # Carteira por rota
+    rotas = Rota.objects.filter(empresa=empresa, ativa=True).select_related('caixa')
+    carteira_rotas = []
+    for rota in rotas:
+        ativos = Emprestimo.objects.filter(rota=rota, status='ativo').count()
+        carteira = (
+            Emprestimo.objects.filter(rota=rota, status='ativo')
+            .aggregate(t=Sum('valor_total'))['t'] or Decimal('0')
+        )
+        inadimp = Emprestimo.objects.filter(rota=rota, status='inadimplente').count()
+        recebido_rota = (
+            Pagamento.objects.filter(
+                parcela__emprestimo__rota=rota,
+                data_pagamento__date__gte=inicio_mes,
+            ).aggregate(t=Sum('valor'))['t'] or Decimal('0')
+        )
+        saldo = rota.caixa.saldo if hasattr(rota, 'caixa') else Decimal('0')
+        carteira_rotas.append({
+            'rota': rota,
+            'ativos': ativos,
+            'carteira': carteira,
+            'inadimplentes': inadimp,
+            'recebido_mes': recebido_rota,
+            'saldo': saldo,
+        })
+
+    # Top inadimplentes
+    inadimplentes = _clientes_inadimplentes(empresa, hoje, limite=10)
+
+    return render(request, 'accounts/relatorios.html', {
+        'hoje': hoje,
+        'inicio_mes': inicio_mes,
+        'clientes_inadimp': clientes_inadimp,
+        'valor_inadimp': valor_inadimp,
+        'parcelas_atrasadas': parcelas_atrasadas,
+        'recebido_mes': recebido_mes,
+        'pagamentos_mes': pagamentos_mes,
+        'emprestimos_mes': emprestimos_mes,
+        'valor_concedido_mes': valor_concedido_mes,
+        'carteira_rotas': carteira_rotas,
+        'inadimplentes': inadimplentes,
+    })
+
+
+# ── Configurações ────────────────────────────────────────────────────────────
+
+@login_required
+@requer_perfil('admin')
+def configuracoes(request):
+    empresa = request.user.empresa
+    rotas = Rota.objects.filter(empresa=empresa).select_related('configuracao').order_by('nome')
+    vendedores = Usuario.objects.filter(empresa=empresa, perfil='vendedor').order_by('first_name')
+    gerentes = Usuario.objects.filter(empresa=empresa, perfil='gerente').order_by('first_name')
+
+    return render(request, 'accounts/configuracoes.html', {
+        'empresa': empresa,
+        'rotas': rotas,
+        'vendedores': vendedores,
+        'gerentes': gerentes,
     })

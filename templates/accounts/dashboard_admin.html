@@ -202,7 +202,7 @@
 <div style="margin-bottom:1.5rem">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
     <h2 style="font-size:.9rem;font-weight:700">Rotas da empresa</h2>
-    <a href="#" style="font-size:.8rem;color:var(--blue);text-decoration:none;font-weight:500">Ver todas →</a>
+    <a href="{% url 'rotas:lista' %}" style="font-size:.8rem;color:var(--blue);text-decoration:none;font-weight:500">Ver todas →</a>
   </div>
   <div class="grid-{% if rotas_resumo|length > 3 %}4{% elif rotas_resumo|length == 3 %}3{% else %}2{% endif %}">
     {% for r in rotas_resumo %}
@@ -256,7 +256,7 @@
         <div class="card-title">Últimos empréstimos</div>
         <div class="card-sub">8 mais recentes da empresa</div>
       </div>
-      <a href="#" style="font-size:.8rem;color:var(--blue);text-decoration:none;font-weight:500">Ver todos →</a>
+      <a href="{% url 'emprestimos:lista' %}" style="font-size:.8rem;color:var(--blue);text-decoration:none;font-weight:500">Ver todos →</a>
     </div>
     <div class="table-wrap">
       <table>

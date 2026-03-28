@@ -67,7 +67,7 @@
       <tbody>
         {% for c in page %}
         <tr>
-          <td style="font-weight:500">{{ c.nome }}</td>
+          <td style="font-weight:500"><a href="{% url 'clientes:detalhe' c.pk %}" style="color:inherit;text-decoration:none">{{ c.nome }}</a></td>
           <td class="td-muted">{{ c.cpf|default:"—" }}</td>
           <td class="td-muted">{{ c.telefone|default:"—" }}</td>
           <td class="td-muted">{{ c.rota.nome|default:"—" }}</td>
