@@ -96,8 +96,19 @@ systempaytec/
 - [x] `MovimentacaoInline` no admin do Pagamento
 - [x] Guard `ConfiguracaoRota` com `getattr` + `{% if r.config %}` nos templates
 - [x] `popular_banco` atualizado para funcionar com signals (sem duplicações)
+- [x] Navegação sidebar com links reais (sem href="#") e condicional por perfil
+- [x] CRUD Clientes: lista (filtro/paginação), criar, editar, detalhe
+- [x] CRUD Empréstimos: lista (filtro/paginação), criar (signal gera parcelas+caixa), detalhe com parcelas
+- [x] CRUD Rotas: lista (anotações), detalhe (saldo, carteira, inadimplência, vendedores, clientes)
+- [x] Financeiro: registrar pagamento, caixa por rota, movimentações com paginação
+- [x] Relatórios gerenciais: métricas mês, carteira por rota, top inadimplentes
+- [x] Configurações: dados da empresa, rotas/configs, equipe (gerentes/vendedores)
+- [x] Responsividade mobile: hamburger menu, overlay, tabelas adaptadas
+- [x] Guia de utilização do sistema por perfil (GUIA_USUARIO.md)
 - [ ] Recuperação de senha
-- [ ] Relatórios: inadimplência, fluxo de caixa, carteira por rota
+- [ ] Gráficos/visualizações nos relatórios
+- [ ] Renegociação de empréstimos
+- [ ] Operações em lote
 
 ---
 
