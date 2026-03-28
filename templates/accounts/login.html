@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SystemPay — Entrar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand-dark:   #0b1120;
+      --brand-navy:   #111827;
+      --brand-blue:   #2563eb;
+      --brand-blue-h: #1d4ed8;
+      --brand-teal:   #0ea5e9;
+      --brand-green:  #10b981;
+      --text-primary: #f9fafb;
+      --text-muted:   #9ca3af;
+      --input-bg:     #1f2937;
+      --input-border: #374151;
+      --input-focus:  #2563eb;
+      --error-bg:     rgba(239,68,68,.12);
+      --error-border: #ef4444;
+      --error-text:   #fca5a5;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--brand-dark);
+      color: var(--text-primary);
+    }
+
+    /* ── Layout ─────────────────────────────────────── */
+    .page {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Painel esquerdo — marca ─────────────────────── */
+    .brand-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3rem;
+      background: var(--brand-navy);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* grade de pontos no fundo */
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle, rgba(37,99,235,.18) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+    }
+
+    /* brilho circular */
+    .brand-panel::after {
+      content: '';
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(14,165,233,.14) 0%, transparent 70%);
+      top: -80px;
+      left: -120px;
+      pointer-events: none;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-icon svg { width: 22px; height: 22px; fill: #fff; }
+
+    .brand-name {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+
+    .brand-name span { color: var(--brand-teal); }
+
+    .brand-body {
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-tagline {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -.03em;
+      max-width: 380px;
+    }
+
+    .brand-tagline em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--brand-blue), var(--brand-teal));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-sub {
+      margin-top: 1rem;
+      color: var(--text-muted);
+      font-size: .95rem;
+      line-height: 1.6;
+      max-width: 340px;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 2rem;
+      margin-top: 2.5rem;
+    }
+
+    .stat { display: flex; flex-direction: column; gap: .2rem; }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--brand-blue), var(--brand-teal));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label { font-size: .78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+
+    .brand-footer {
+      font-size: .8rem;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Painel direito — formulário ─────────────────── */
+    .form-panel {
+      width: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 3rem;
+      background: var(--brand-dark);
+      position: relative;
+    }
+
+    .form-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent, rgba(37,99,235,.3), transparent);
+    }
+
+    .form-box {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .form-header { margin-bottom: 2rem; }
+
+    .form-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+
+    .form-subtitle {
+      margin-top: .35rem;
+      color: var(--text-muted);
+      font-size: .9rem;
+    }
+
+    /* ── Alerta de erro ──────────────────────────────── */
+    .alert-error {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .85rem 1rem;
+      margin-bottom: 1.5rem;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      border-radius: 8px;
+      color: var(--error-text);
+      font-size: .875rem;
+    }
+
+    .alert-error svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ── Campos ──────────────────────────────────────── */
+    .field { margin-bottom: 1.25rem; }
+
+    .field-label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: .45rem;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: .9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4b5563;
+      pointer-events: none;
+      transition: color .2s;
+    }
+
+    .input-icon svg { width: 16px; height: 16px; }
+
+    .field-input {
+      width: 100%;
+      padding: .75rem .9rem .75rem 2.6rem;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: .95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .field-input::placeholder { color: #4b5563; }
+
+    .field-input:focus {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+    }
+
+    .field-input:focus ~ .input-icon,
+    .input-wrap:focus-within .input-icon { color: var(--brand-blue); }
+
+    /* toggle senha */
+    .toggle-password {
+      position: absolute;
+      right: .9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #4b5563;
+      display: flex;
+      align-items: center;
+      transition: color .2s;
+    }
+
+    .toggle-password:hover { color: var(--text-muted); }
+    .toggle-password svg { width: 16px; height: 16px; }
+
+    /* ── Opções abaixo do password ───────────────────── */
+    .field-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .875rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-label input { accent-color: var(--brand-blue); width: 15px; height: 15px; cursor: pointer; }
+
+    .forgot-link {
+      font-size: .875rem;
+      color: var(--brand-teal);
+      text-decoration: none;
+      transition: color .2s;
+    }
+
+    .forgot-link:hover { color: #38bdf8; }
+
+    /* ── Botão entrar ─────────────────────────────────── */
+    .btn-login {
+      width: 100%;
+      padding: .85rem;
+      background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: .95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      letter-spacing: .01em;
+    }
+
+    .btn-login:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-login:active { transform: translateY(0); }
+    .btn-login svg { width: 16px; height: 16px; }
+
+    /* ── Divisor / rodapé ───────────────────────────── */
+    .form-footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: .8rem;
+      color: var(--text-muted);
+    }
+
+    .version-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .3rem .7rem;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 999px;
+      font-size: .72rem;
+      color: var(--text-muted);
+      margin-top: .75rem;
+    }
+
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-green); animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    /* ── Responsividade ─────────────────────────────── */
+    @media (max-width: 900px) {
+      .brand-panel { display: none; }
+      .form-panel { width: 100%; padding: 2rem 1.5rem; }
+      .form-panel::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Painel da marca ── -->
+  <div class="brand-panel">
+    <div class="brand-logo">
+      <div class="brand-icon">
+        <!-- ícone: cifrão estilizado -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48
+            10-10S17.52 2 12 2zm.88 14.76V18h-1.75v-1.29c-1.62-.3-2.94-1.4-3.06-3.08h1.85c.11.92.79
+            1.62 2.1 1.62 1.22 0 1.93-.62 1.93-1.47 0-.75-.5-1.2-1.91-1.54l-.92-.22c-1.81-.44-2.88-1.33-2.88-2.93
+            0-1.53 1.19-2.66 2.89-2.94V5h1.75v1.17c1.6.28 2.7 1.3 2.77 2.87h-1.84c-.08-.91-.68-1.56-1.86-1.56-1.11
+            0-1.83.54-1.83 1.38 0 .72.52 1.15 1.77 1.47l.92.23c1.9.46 3.02 1.34 3.02 3.02 0 1.63-1.22 2.83-2.95
+            3.18z"/>
+        </svg>
+      </div>
+      <span class="brand-name">System<span>Pay</span><span style="color:#4b5563;font-weight:400">.tec</span></span>
+    </div>
+
+    <div class="brand-body">
+      <h1 class="brand-tagline">
+        Gestão de crédito<br><em>simples e eficiente</em>
+      </h1>
+      <p class="brand-sub">
+        Controle rotas, empréstimos e cobrança em um único sistema. Do vendedor ao gestor, tudo em tempo real.
+      </p>
+      <div class="stats-row">
+        <div class="stat">
+          <span class="stat-value">100%</span>
+          <span class="stat-label">Rastreável</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">3</span>
+          <span class="stat-label">Perfis de acesso</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">∞</span>
+          <span class="stat-label">Rotas e clientes</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="brand-footer">
+      &copy; 2025 SystemPay.tec — Todos os direitos reservados
+    </div>
+  </div>
+
+  <!-- ── Painel do formulário ── -->
+  <div class="form-panel">
+    <div class="form-box">
+
+      <div class="form-header">
+        <h2 class="form-title">Bem-vindo de volta</h2>
+        <p class="form-subtitle">Acesse sua conta para continuar</p>
+      </div>
+
+      <!-- Mensagens de erro -->
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="alert-error">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12
+                2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" autocomplete="off" novalidate>
+        {% csrf_token %}
+
+        <!-- Usuário -->
+        <div class="field">
+          <label class="field-label" for="username">Usuário</label>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3
+                  12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+            </span>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              class="field-input"
+              placeholder="seu.usuario"
+              value="{{ request.POST.username|default:'' }}"
+              autofocus
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Senha -->
+        <div class="field">
+          <label class="field-label" for="password">Senha</label>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2
+                  2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6
+                  9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71
+                  1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+              </svg>
+            </span>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              class="field-input"
+              placeholder="••••••••"
+              required
+            />
+            <button type="button" class="toggle-password" onclick="togglePassword()" title="Mostrar senha" aria-label="Mostrar senha">
+              <svg id="eye-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11
+                  11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5
+                  5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Lembrar / Esqueceu -->
+        <div class="field-options">
+          <label class="checkbox-label">
+            <input type="checkbox" name="remember" />
+            Manter conectado
+          </label>
+          <a href="#" class="forgot-link">Esqueceu a senha?</a>
+        </div>
+
+        <button type="submit" class="btn-login">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9
+              12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/>
+          </svg>
+          Entrar na plataforma
+        </button>
+      </form>
+
+      <div class="form-footer">
+        <div>Problemas para acessar? Contate o suporte.</div>
+        <div class="version-badge">
+          <span class="dot"></span>
+          Sistema online &nbsp;·&nbsp; SystemPay v1.0
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function togglePassword() {
+    const input = document.getElementById('password');
+    const icon  = document.getElementById('eye-icon');
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    icon.innerHTML = isHidden
+      ? `<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26
+           2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16
+           2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02
+           1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21
+           20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34
+           3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76
+           0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>`
+      : `<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11
+           11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5
+           5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>`;
+  }
+</script>
+</body>
+</html>
