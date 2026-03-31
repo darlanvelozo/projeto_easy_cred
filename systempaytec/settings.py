@@ -94,10 +94,11 @@ DATABASES = {
 }
 
 # Em producao, usa PostgreSQL via DATABASE_URL
-if IS_PRODUCTION:
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
     import dj_database_url
     DATABASES['default'] = dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default=DATABASE_URL,
         conn_max_age=600,
     )
 
