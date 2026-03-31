@@ -1,67 +1,164 @@
 {% extends "base.html" %}
 {% block title %}Vendedor{% endblock %}
 {% block nav_dashboard_vendedor %}active{% endblock %}
+{% block bnav_dashboard %}active{% endblock %}
 {% block page_title %}Meu Painel{% endblock %}
-{% block page_sub %}Olá, {{ request.user.first_name|default:request.user.username }}! Estas são suas atividades de hoje.{% endblock %}
+{% block page_sub %}Ola, {{ request.user.first_name|default:request.user.username }}!{% endblock %}
+
+{% block fab %}
+<a href="{% url 'emprestimos:criar' %}" class="fab" title="Novo emprestimo">
+  <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+</a>
+{% endblock %}
 
 {% block extra_head %}
 <style>
+  /* ── Metric cards ── */
   .metric-card {
     background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
-    padding: 1.25rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+    padding: 1.1rem; display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem;
     box-shadow: var(--shadow-sm); transition: box-shadow .2s, transform .15s;
   }
-  .metric-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
-  .metric-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
-  .metric-value { font-size: 1.6rem; font-weight: 800; letter-spacing: -.03em; margin-top: .25rem; line-height: 1; }
-  .metric-sub { font-size: .78rem; color: var(--text-muted); margin-top: .4rem; }
+  .metric-card:active { transform: scale(.98); }
+  .metric-label { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .metric-value { font-size: 1.5rem; font-weight: 800; letter-spacing: -.03em; margin-top: .2rem; line-height: 1; }
+  .metric-sub { font-size: .75rem; color: var(--text-muted); margin-top: .35rem; }
   .metric-sub b { color: var(--text-secondary); font-weight: 600; }
-  .metric-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .metric-icon svg { width: 22px; height: 22px; }
+  .metric-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .metric-icon svg { width: 20px; height: 20px; }
   .icon-blue   { background: #dbeafe; color: var(--blue); }
   .icon-green  { background: #dcfce7; color: var(--green); }
   .icon-red    { background: #fee2e2; color: var(--red); }
   .icon-yellow { background: #fef9c3; color: var(--yellow); }
   .icon-teal   { background: #e0f2fe; color: var(--teal); }
 
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
 
+  /* ── Parcela items (touch-friendly) ── */
   .parcela-item {
     display: flex; align-items: center; justify-content: space-between;
-    padding: .85rem 1.25rem; border-bottom: 1px solid #f1f5f9;
+    padding: .85rem 1rem; border-bottom: 1px solid #f1f5f9;
+    gap: .5rem;
+    transition: background .15s;
   }
+  .parcela-item:active { background: #f8fafc; }
   .parcela-item:last-child { border-bottom: none; }
-  .parcela-nome { font-size: .875rem; font-weight: 600; }
-  .parcela-det  { font-size: .75rem; color: var(--text-muted); margin-top: .1rem; }
-  .parcela-valor { font-size: .9rem; font-weight: 700; }
+  .parcela-info { flex: 1; min-width: 0; }
+  .parcela-nome { font-size: .85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .parcela-det  { font-size: .72rem; color: var(--text-muted); margin-top: .1rem; }
+  .parcela-right { text-align: right; flex-shrink: 0; }
+  .parcela-valor { font-size: .88rem; font-weight: 700; }
   .parcela-btn {
-    margin-top: .35rem; display: inline-block; padding: .25rem .6rem;
-    font-size: .7rem; font-weight: 600; border-radius: 6px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: .25rem;
+    margin-top: .35rem; padding: .35rem .65rem;
+    font-size: .72rem; font-weight: 600; border-radius: 6px; text-decoration: none;
     background: var(--green); color: #fff; transition: opacity .15s;
+    min-height: 32px; touch-action: manipulation;
   }
-  .parcela-btn:hover { opacity: .85; }
+  .parcela-btn:active { opacity: .85; }
+  .parcela-btn svg { width: 12px; height: 12px; fill: currentColor; }
 
+  /* ── Inadimplentes ── */
   .inadim-item {
     display: flex; align-items: center; justify-content: space-between;
-    padding: .75rem 1.25rem; border-bottom: 1px solid #f8fafc;
+    padding: .75rem 1rem; border-bottom: 1px solid #f8fafc;
+    gap: .5rem;
   }
   .inadim-item:last-child { border-bottom: none; }
-  .inadim-nome { font-size: .875rem; font-weight: 600; }
-  .inadim-sub  { font-size: .75rem; color: var(--text-muted); margin-top: .1rem; }
-  .inadim-right { text-align: right; }
-  .inadim-valor { font-size: .9rem; font-weight: 700; color: var(--red); }
-  .inadim-dias  { font-size: .72rem; color: var(--text-muted); margin-top: .1rem; }
+  .inadim-info { flex: 1; min-width: 0; }
+  .inadim-nome { font-size: .85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .inadim-sub  { font-size: .72rem; color: var(--text-muted); margin-top: .1rem; }
+  .inadim-right { text-align: right; flex-shrink: 0; }
+  .inadim-valor { font-size: .88rem; font-weight: 700; color: var(--red); }
+  .inadim-dias  { font-size: .7rem; color: var(--text-muted); margin-top: .1rem; }
+
+  /* ── Carteira table mobile ── */
+  .carteira-mobile { display: none; }
+  .carteira-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .85rem 1rem; border-bottom: 1px solid #f1f5f9;
+    gap: .5rem;
+  }
+  .carteira-card:last-child { border-bottom: none; }
+  .carteira-card-info { flex: 1; min-width: 0; }
+  .carteira-card-nome { font-size: .85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .carteira-card-det { font-size: .72rem; color: var(--text-muted); margin-top: .15rem; display: flex; gap: .6rem; flex-wrap: wrap; }
+  .carteira-card-right { text-align: right; flex-shrink: 0; }
+  .carteira-card-valor { font-size: .88rem; font-weight: 700; color: var(--blue); }
+  .carteira-card-rest { font-size: .7rem; color: var(--text-muted); margin-top: .1rem; }
+
+  /* ── Quick actions grid ── */
+  .quick-actions {
+    display: none;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .5rem;
+    margin-bottom: 1rem;
+  }
+  .quick-action {
+    display: flex; flex-direction: column; align-items: center; gap: .35rem;
+    padding: .75rem .5rem;
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
+    text-decoration: none; color: var(--text-secondary);
+    font-size: .68rem; font-weight: 600; text-align: center;
+    transition: background .15s;
+    min-height: 44px;
+  }
+  .quick-action:active { background: #f8fafc; }
+  .quick-action-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .quick-action-icon svg { width: 18px; height: 18px; }
+
+  /* ── Mobile overrides ── */
+  @media (max-width: 768px) {
+    .quick-actions { display: grid; }
+    .metric-card { padding: .85rem; }
+    .metric-value { font-size: 1.25rem; }
+    .metric-icon { width: 36px; height: 36px; }
+    .metric-icon svg { width: 18px; height: 18px; }
+
+    /* Desktop table hidden, mobile cards shown */
+    .carteira-desktop { display: none; }
+    .carteira-mobile { display: block; }
+  }
+
+  @media (max-width: 480px) {
+    .grid-4 { grid-template-columns: 1fr 1fr; gap: .6rem; }
+    .metric-label { font-size: .65rem; }
+    .metric-value { font-size: 1.15rem; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Métricas -->
-<div class="grid-4" style="margin-bottom:1.5rem">
+<!-- Quick Actions (mobile only) -->
+<div class="quick-actions">
+  <a href="{% url 'emprestimos:criar' %}" class="quick-action">
+    <div class="quick-action-icon icon-blue"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+    Novo Emprestimo
+  </a>
+  <a href="{% url 'clientes:criar' %}" class="quick-action">
+    <div class="quick-action-icon icon-green"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+    Novo Cliente
+  </a>
+  <a href="{% url 'clientes:mapa' %}" class="quick-action">
+    <div class="quick-action-icon icon-teal"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>
+    Mapa
+  </a>
+  <a href="{% url 'clientes:lista' %}" class="quick-action">
+    <div class="quick-action-icon icon-yellow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+    Clientes
+  </a>
+</div>
+
+<!-- Metricas -->
+<div class="grid-4" style="margin-bottom:1rem">
   <div class="metric-card">
     <div>
       <div class="metric-label">Minha Carteira</div>
       <div class="metric-value">R$&nbsp;{{ valor_carteira|floatformat:2 }}</div>
-      <div class="metric-sub"><b>{{ total_emprestimos_ativos }}</b> empréstimos ativos</div>
+      <div class="metric-sub"><b>{{ total_emprestimos_ativos }}</b> ativos</div>
     </div>
     <div class="metric-icon icon-blue"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
   </div>
@@ -69,7 +166,7 @@
     <div>
       <div class="metric-label">Parcelas Hoje</div>
       <div class="metric-value" style="color:var(--yellow)">{{ total_parcelas_hoje }}</div>
-      <div class="metric-sub">R$&nbsp;{{ valor_parcelas_hoje|floatformat:2 }} a cobrar</div>
+      <div class="metric-sub">R$&nbsp;{{ valor_parcelas_hoje|floatformat:2 }}</div>
     </div>
     <div class="metric-icon icon-yellow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg></div>
   </div>
@@ -85,21 +182,21 @@
     <div>
       <div class="metric-label">Inadimplentes</div>
       <div class="metric-value" style="color:var(--red)">{{ total_inadimplentes }}</div>
-      <div class="metric-sub">clientes em atraso</div>
+      <div class="metric-sub">em atraso</div>
     </div>
     <div class="metric-icon icon-red"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
   </div>
 </div>
 
 <!-- Parcelas de hoje + Inadimplentes -->
-<div class="two-col" style="margin-bottom:1.25rem">
+<div class="two-col" style="margin-bottom:1rem">
 
   <!-- Parcelas de hoje -->
   <div class="card">
     <div class="card-header">
       <div>
-        <div class="card-title">Cobranças de hoje</div>
-        <div class="card-sub">Parcelas com vencimento em {% now "d/m/Y" %}</div>
+        <div class="card-title">Cobrancas de hoje</div>
+        <div class="card-sub">{% now "d/m/Y" %}</div>
       </div>
       {% if total_parcelas_hoje > 0 %}
       <span class="badge badge-yellow">{{ total_parcelas_hoje }}</span>
@@ -107,17 +204,20 @@
     </div>
     {% for p in parcelas_hoje %}
     <div class="parcela-item">
-      <div>
+      <div class="parcela-info">
         <div class="parcela-nome">{{ p.emprestimo.cliente.nome }}</div>
-        <div class="parcela-det">{{ p.emprestimo.rota.nome }} · Parcela {{ p.numero }}/{{ p.emprestimo.num_parcelas }}</div>
+        <div class="parcela-det">{{ p.emprestimo.rota.nome }} · {{ p.numero }}/{{ p.emprestimo.num_parcelas }}</div>
       </div>
-      <div style="text-align:right">
+      <div class="parcela-right">
         <div class="parcela-valor">R$ {{ p.valor|floatformat:2 }}</div>
-        <a href="{% url 'financeiro:registrar_pagamento' p.pk %}" class="parcela-btn">Registrar Pagamento</a>
+        <a href="{% url 'financeiro:registrar_pagamento' p.pk %}" class="parcela-btn">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+          Pagar
+        </a>
       </div>
     </div>
     {% empty %}
-    <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.875rem">
+    <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.85rem">
       Nenhuma parcela vence hoje.
     </div>
     {% endfor %}
@@ -127,8 +227,8 @@
   <div class="card">
     <div class="card-header">
       <div>
-        <div class="card-title">Clientes inadimplentes</div>
-        <div class="card-sub">Parcelas em atraso nas suas rotas</div>
+        <div class="card-title">Inadimplentes</div>
+        <div class="card-sub">Parcelas em atraso</div>
       </div>
       {% if total_inadimplentes > 0 %}
       <span class="badge badge-red">{{ total_inadimplentes }}</span>
@@ -136,18 +236,18 @@
     </div>
     {% for c in inadimplentes_resumo %}
     <div class="inadim-item">
-      <div>
+      <div class="inadim-info">
         <div class="inadim-nome">{{ c.nome }}</div>
         <div class="inadim-sub">{{ c.rota }}{% if c.telefone %} · {{ c.telefone }}{% endif %}</div>
       </div>
       <div class="inadim-right">
         <div class="inadim-valor">R$ {{ c.valor_atrasado|floatformat:2 }}</div>
-        <div class="inadim-dias">{{ c.qtd_atrasadas }} parc. · {{ c.dias_atraso }}d atraso</div>
+        <div class="inadim-dias">{{ c.qtd_atrasadas }} parc. · {{ c.dias_atraso }}d</div>
       </div>
     </div>
     {% empty %}
-    <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.875rem">
-      Nenhum cliente inadimplente.
+    <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.85rem">
+      Nenhum inadimplente.
     </div>
     {% endfor %}
   </div>
@@ -158,11 +258,13 @@
   <div class="card-header">
     <div>
       <div class="card-title">Minha carteira ativa</div>
-      <div class="card-sub">Empréstimos em andamento</div>
+      <div class="card-sub">Emprestimos em andamento</div>
     </div>
-    <span style="font-size:.85rem;font-weight:700;color:var(--blue)">{{ total_emprestimos_ativos }} emprést.</span>
+    <span style="font-size:.82rem;font-weight:700;color:var(--blue)">{{ total_emprestimos_ativos }} emprést.</span>
   </div>
-  <div class="table-wrap">
+
+  <!-- Desktop table -->
+  <div class="table-wrap carteira-desktop">
     <table>
       <thead>
         <tr>
@@ -170,7 +272,7 @@
           <th>Rota</th>
           <th>Valor parcela</th>
           <th>Restantes</th>
-          <th>Próx. vencimento</th>
+          <th>Prox. vencimento</th>
         </tr>
       </thead>
       <tbody>
@@ -185,10 +287,32 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum empréstimo ativo.</td></tr>
+        <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum emprestimo ativo.</td></tr>
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- Mobile card list -->
+  <div class="carteira-mobile">
+    {% for item in minha_carteira %}
+    <div class="carteira-card">
+      <div class="carteira-card-info">
+        <div class="carteira-card-nome">{{ item.emprestimo.cliente.nome }}</div>
+        <div class="carteira-card-det">
+          <span>{{ item.emprestimo.rota.nome }}</span>
+          <span>{{ item.restantes }}/{{ item.emprestimo.num_parcelas }} restantes</span>
+          {% if item.proximo_vencimento %}<span>Venc. {{ item.proximo_vencimento|date:"d/m" }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="carteira-card-right">
+        <div class="carteira-card-valor">R$ {{ item.valor_parcela|floatformat:2 }}</div>
+        <div class="carteira-card-rest">por parcela</div>
+      </div>
+    </div>
+    {% empty %}
+    <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.85rem">Nenhum emprestimo ativo.</div>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

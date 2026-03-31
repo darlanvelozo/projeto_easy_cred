@@ -1,9 +1,21 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
   <title>{% block title %}SystemPay{% endblock %} — SystemPay.tec</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="{% static 'manifest.json' %}" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SystemPay" />
+  <link rel="apple-touch-icon" href="{% static 'icons/icon-192.svg' %}" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="SystemPay" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -20,7 +32,7 @@
 
       --topbar-bg:       #ffffff;
       --topbar-border:   #e2e8f0;
-      --topbar-height:   60px;
+      --topbar-height:   56px;
 
       --page-bg:         #f1f5f9;
       --card-bg:         #ffffff;
@@ -42,9 +54,30 @@
 
       --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
       --shadow:    0 4px 16px rgba(0,0,0,.08);
+
+      /* mobile bottom nav */
+      --bottom-nav-height: 64px;
+
+      /* safe areas (notch) */
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
     }
 
-    html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--page-bg); color: var(--text-primary); }
+    html { height: 100%; -webkit-text-size-adjust: 100%; }
+    body {
+      min-height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--page-bg);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overscroll-behavior-y: contain;
+    }
+
+    /* Tap highlight */
+    a, button { -webkit-tap-highlight-color: transparent; }
 
     /* ── Layout principal ────────────────────── */
     .layout { display: flex; min-height: 100vh; }
@@ -60,7 +93,8 @@
       height: 100vh;
       z-index: 100;
       border-right: 1px solid var(--sidebar-border);
-      transition: transform .25s;
+      transition: transform .25s cubic-bezier(.4,0,.2,1);
+      will-change: transform;
     }
 
     .sidebar-logo {
@@ -99,7 +133,7 @@
     .empresa-nome  { font-size: .82rem; color: #e2e8f0; font-weight: 500; margin-top: .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* nav */
-    .sidebar-nav { flex: 1; padding: .5rem 0; overflow-y: auto; }
+    .sidebar-nav { flex: 1; padding: .5rem 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
     .nav-section-label {
       font-size: .65rem;
@@ -114,7 +148,7 @@
       display: flex;
       align-items: center;
       gap: .7rem;
-      padding: .6rem 1.25rem;
+      padding: .65rem 1.25rem;
       color: var(--text-sidebar);
       text-decoration: none;
       font-size: .875rem;
@@ -122,6 +156,7 @@
       border-radius: 0;
       transition: background .15s, color .15s;
       position: relative;
+      min-height: 44px; /* touch target */
     }
 
     .nav-link svg { width: 17px; height: 17px; flex-shrink: 0; opacity: .7; }
@@ -161,6 +196,7 @@
       border-radius: 8px;
       transition: background .15s;
       text-decoration: none;
+      min-height: 44px;
     }
 
     .user-card:hover { background: var(--sidebar-hover); }
@@ -180,7 +216,7 @@
 
     .user-card svg { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
 
-    /* ── Área principal ──────────────────────── */
+    /* ── Area principal ──────────────────────── */
     .main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
 
     /* ── Topbar ──────────────────────────────── */
@@ -191,18 +227,18 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 1.75rem;
+      padding: 0 1.5rem;
       position: sticky;
       top: 0;
       z-index: 50;
       box-shadow: var(--shadow-sm);
     }
 
-    .topbar-left { display: flex; flex-direction: column; }
-    .topbar-title { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
-    .topbar-sub   { font-size: .78rem; color: var(--text-muted); margin-top: .05rem; }
+    .topbar-left { display: flex; align-items: center; gap: .75rem; flex: 1; min-width: 0; }
+    .topbar-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-sub   { font-size: .75rem; color: var(--text-muted); margin-top: .05rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .topbar-right { display: flex; align-items: center; gap: .75rem; }
+    .topbar-right { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
 
     .topbar-btn {
       width: 36px; height: 36px;
@@ -214,6 +250,7 @@
       color: var(--text-secondary);
       position: relative;
       transition: background .15s;
+      min-height: 44px; min-width: 44px;
     }
 
     .topbar-btn:hover { background: var(--page-bg); }
@@ -229,42 +266,45 @@
     }
 
     .topbar-date {
-      font-size: .8rem;
+      font-size: .78rem;
       color: var(--text-muted);
-      padding: .35rem .75rem;
+      padding: .3rem .65rem;
       background: var(--page-bg);
       border: 1px solid var(--card-border);
       border-radius: 8px;
+      white-space: nowrap;
     }
 
-    /* ── Conteúdo ────────────────────────────── */
-    .content { padding: 1.75rem; flex: 1; }
+    /* ── Conteudo ────────────────────────────── */
+    .content { padding: 1.5rem; flex: 1; }
 
-    /* ── Cards utilitários ───────────────────── */
+    /* ── Cards utilitarios ───────────────────── */
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: var(--card-radius);
       box-shadow: var(--shadow-sm);
+      overflow: hidden;
     }
 
     .card-header {
-      padding: 1.1rem 1.25rem .75rem;
+      padding: 1rem 1.25rem .75rem;
       border-bottom: 1px solid var(--card-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: .75rem;
     }
 
-    .card-title { font-size: .9rem; font-weight: 600; color: var(--text-primary); }
-    .card-sub   { font-size: .78rem; color: var(--text-muted); margin-top: .1rem; }
+    .card-title { font-size: .88rem; font-weight: 600; color: var(--text-primary); }
+    .card-sub   { font-size: .75rem; color: var(--text-muted); margin-top: .1rem; }
 
     .card-body { padding: 1.25rem; }
 
     /* ── Grid helpers ────────────────────────── */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
 
     /* ── Badges de status ────────────────────── */
     .badge {
@@ -283,7 +323,7 @@
     .badge-gray   { background: #f1f5f9; color: #64748b; }
 
     /* ── Tabelas ─────────────────────────────── */
-    .table-wrap { overflow-x: auto; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
     table { width: 100%; border-collapse: collapse; }
 
@@ -300,8 +340,8 @@
     }
 
     td {
-      padding: .8rem 1rem;
-      font-size: .875rem;
+      padding: .75rem 1rem;
+      font-size: .85rem;
       color: var(--text-primary);
       border-bottom: 1px solid #f8fafc;
     }
@@ -309,15 +349,15 @@
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #f8fafc; }
 
-    .td-muted { color: var(--text-muted); font-size: .8rem; }
+    .td-muted { color: var(--text-muted); font-size: .78rem; }
 
     /* ── Alertas / mensagens ─────────────────── */
-    .messages { margin-bottom: 1.25rem; }
+    .messages { margin-bottom: 1rem; }
 
     .alert {
-      padding: .85rem 1rem;
+      padding: .75rem 1rem;
       border-radius: 8px;
-      font-size: .875rem;
+      font-size: .85rem;
       margin-bottom: .5rem;
       display: flex;
       align-items: center;
@@ -328,40 +368,284 @@
     .alert-success { background: #dcfce7; border: 1px solid #86efac; color: #16a34a; }
     .alert-info    { background: #dbeafe; border: 1px solid #93c5fd; color: #2563eb; }
 
-    /* ── Botão hamburger ──────────────────────── */
+    /* ── Botoes globais ──────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+      padding: .6rem 1.1rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: opacity .15s, transform .1s;
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+    .btn:active { transform: scale(.97); }
+
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { opacity: .9; }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-green:hover { opacity: .9; }
+    .btn-red { background: var(--red); color: #fff; }
+    .btn-red:hover { opacity: .9; }
+    .btn-secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--card-border); }
+    .btn-secondary:hover { background: var(--page-bg); }
+    .btn-sm { padding: .35rem .75rem; font-size: .78rem; min-height: 36px; }
+    .btn-outline { background: transparent; color: var(--blue); border: 1px solid var(--blue); }
+    .btn-outline:hover { background: #eff6ff; }
+
+    /* ── Form helpers globais ────────────────── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: .35rem; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: .7rem .85rem;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      font-size: .9rem;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: #fff;
+      min-height: 44px;
+      transition: border-color .2s, box-shadow .2s;
+      -webkit-appearance: none;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+    .form-group textarea { min-height: 88px; resize: vertical; }
+    .form-group .errorlist { list-style: none; }
+    .form-group .errorlist li { font-size: .78rem; color: var(--red); margin-top: .15rem; }
+
+    /* ── Botao hamburger ──────────────────────── */
     .menu-toggle {
       display: none;
-      width: 36px; height: 36px; border: none; background: none; cursor: pointer;
+      width: 44px; height: 44px; border: none; background: none; cursor: pointer;
       color: var(--text-primary); padding: 0;
+      align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
     .menu-toggle svg { width: 22px; height: 22px; }
     .sidebar-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
       z-index: 99;
+      -webkit-backdrop-filter: blur(2px);
+      backdrop-filter: blur(2px);
     }
     .sidebar-overlay.show { display: block; }
 
+    /* ── Bottom Navigation (mobile PWA) ──────── */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--bottom-nav-height);
+      padding-bottom: var(--sab);
+      background: #fff;
+      border-top: 1px solid var(--card-border);
+      z-index: 90;
+      box-shadow: 0 -2px 10px rgba(0,0,0,.06);
+    }
+
+    .bottom-nav-inner {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-around;
+      height: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .2rem;
+      flex: 1;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: .65rem;
+      font-weight: 500;
+      transition: color .15s;
+      position: relative;
+      min-width: 0;
+      padding: .25rem 0;
+    }
+
+    .bottom-nav-item svg { width: 22px; height: 22px; flex-shrink: 0; }
+
+    .bottom-nav-item.active {
+      color: var(--blue);
+      font-weight: 600;
+    }
+
+    .bottom-nav-item.active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 32px; height: 3px;
+      background: var(--blue);
+      border-radius: 0 0 3px 3px;
+    }
+
+    /* FAB - Floating Action Button */
+    .fab {
+      display: none;
+      position: fixed;
+      z-index: 85;
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--blue), var(--teal));
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(37,99,235,.35);
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .fab:active { transform: scale(.92); }
+    .fab svg { width: 24px; height: 24px; fill: currentColor; }
+
+    /* ── PWA install banner ──────────────────── */
+    .pwa-install-banner {
+      display: none;
+      position: fixed;
+      bottom: 80px; left: 1rem; right: 1rem;
+      background: var(--sidebar-bg);
+      color: #fff;
+      padding: 1rem;
+      border-radius: 12px;
+      z-index: 200;
+      box-shadow: 0 8px 32px rgba(0,0,0,.3);
+      align-items: center;
+      gap: .75rem;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .pwa-install-banner.show { display: flex; }
+    .pwa-install-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--blue), var(--teal)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pwa-install-icon svg { width: 20px; height: 20px; fill: #fff; }
+    .pwa-install-text { flex: 1; }
+    .pwa-install-title { font-size: .85rem; font-weight: 600; }
+    .pwa-install-sub { font-size: .75rem; color: var(--text-muted); margin-top: .15rem; }
+    .pwa-install-btn { padding: .5rem 1rem; background: var(--blue); color: #fff; border: none; border-radius: 8px; font-size: .8rem; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: inherit; }
+    .pwa-install-close { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: .25rem; }
+    .pwa-install-close svg { width: 16px; height: 16px; }
+
     /* ── Responsivo ──────────────────────────── */
     @media (max-width: 768px) {
-      .menu-toggle { display: flex; align-items: center; justify-content: center; }
+      .menu-toggle { display: flex; }
       .sidebar { transform: translateX(-100%); }
       .sidebar.open { transform: translateX(0); }
-      .main { margin-left: 0; }
+      .main { margin-left: 0; padding-bottom: calc(var(--bottom-nav-height) + var(--sab)); }
+      .bottom-nav { display: block; }
+      .bottom-nav-inner { display: flex; }
+      .fab { display: flex; bottom: calc(var(--bottom-nav-height) + var(--sab) + 16px); right: 16px; }
       .grid-4 { grid-template-columns: 1fr 1fr; }
       .grid-3, .grid-2 { grid-template-columns: 1fr 1fr; }
       .two-col { grid-template-columns: 1fr !important; }
-      .topbar { padding: 0 1rem; }
-      .content { padding: 1rem; }
-      .table-wrap { font-size: .8rem; }
-      .table-wrap th, .table-wrap td { padding: .6rem .5rem; }
+      .topbar { padding: 0 .75rem; height: 52px; }
+      .topbar-title { font-size: .92rem; }
+      .topbar-sub { font-size: .7rem; }
+      .content { padding: .85rem; }
+      .form-grid { grid-template-columns: 1fr; }
+
+      /* Table to card on mobile */
+      .table-responsive-cards thead { display: none; }
+      .table-responsive-cards tbody tr {
+        display: block;
+        padding: .85rem 1rem;
+        border-bottom: 1px solid var(--card-border);
+        position: relative;
+      }
+      .table-responsive-cards tbody tr:last-child { border-bottom: none; }
+      .table-responsive-cards tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: .2rem 0;
+        border-bottom: none;
+        font-size: .85rem;
+      }
+      .table-responsive-cards tbody td::before {
+        content: attr(data-label);
+        font-size: .72rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        flex-shrink: 0;
+        margin-right: .75rem;
+      }
+      .table-responsive-cards tbody tr:hover td { background: transparent; }
+
+      .card-header { padding: .85rem 1rem .65rem; }
+      .card-body { padding: 1rem; }
     }
+
     @media (max-width: 480px) {
       .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
-      .content { padding: .75rem; }
-      .metric-card { padding: 1rem; }
-      .metric-value { font-size: 1.3rem; }
+      .content { padding: .65rem; }
       .topbar-date { display: none; }
+      .topbar-right .topbar-btn:not(:last-child) { display: none; }
     }
+
+    /* ── Standalone PWA mode ─────────────────── */
+    @media (display-mode: standalone) {
+      .topbar { padding-top: var(--sat); height: calc(var(--topbar-height) + var(--sat)); }
+      .sidebar { padding-top: var(--sat); }
+    }
+
+    /* ── Print ───────────────────────────────── */
+    @media print {
+      .sidebar, .topbar, .bottom-nav, .fab, .menu-toggle { display: none !important; }
+      .main { margin-left: 0 !important; padding-bottom: 0 !important; }
+      .content { padding: 0 !important; }
+    }
+
+    /* ── Pull to refresh indicator ───────────── */
+    .pull-indicator {
+      display: none;
+      position: fixed;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      background: var(--blue);
+      color: #fff;
+      padding: .4rem 1rem;
+      border-radius: 0 0 8px 8px;
+      font-size: .78rem;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+    }
+    .pull-indicator.show { display: block; }
+
+    /* ── Skeleton loading ────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ── Smooth transitions ──────────────────── */
+    .fade-in { animation: fadeIn .3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
@@ -391,7 +675,7 @@
     <nav class="sidebar-nav">
       <div class="nav-section-label">Principal</div>
 
-      <!-- Dashboard — link direto para o dashboard do perfil -->
+      <!-- Dashboard -->
       {% if user.perfil == 'admin' %}
       <a href="{% url 'accounts:dashboard_admin' %}" class="nav-link {% block nav_dashboard %}{% endblock %}">
       {% elif user.perfil == 'gerente' %}
@@ -417,7 +701,7 @@
 
       <a href="{% url 'emprestimos:lista' %}" class="nav-link {% block nav_emprestimos %}{% endblock %}">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
-        Empréstimos
+        Emprestimos
       </a>
 
       {% if user.perfil == 'admin' or user.perfil == 'gerente' %}
@@ -430,7 +714,7 @@
 
       <a href="{% url 'accounts:relatorios' %}" class="nav-link {% block nav_relatorios %}{% endblock %}">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
-        Relatórios
+        Relatorios
       </a>
       {% endif %}
 
@@ -439,7 +723,7 @@
 
       <a href="{% url 'accounts:configuracoes' %}" class="nav-link {% block nav_config %}{% endblock %}">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87a.485.485 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-        Configurações
+        Configuracoes
       </a>
       {% endif %}
     </nav>
@@ -456,7 +740,7 @@
     </div>
   </aside>
 
-  <!-- ── Área principal ── -->
+  <!-- ── Area principal ── -->
   <div class="main">
 
     <!-- Overlay mobile -->
@@ -464,11 +748,11 @@
 
     <!-- Topbar -->
     <header class="topbar">
-      <div class="topbar-left" style="display:flex;align-items:center;gap:.75rem">
+      <div class="topbar-left">
         <button class="menu-toggle" onclick="toggleMenu()" aria-label="Menu">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
         </button>
-        <div>
+        <div style="min-width:0">
           <span class="topbar-title">{% block page_title %}Dashboard{% endblock %}</span>
           <span class="topbar-sub">{% block page_sub %}{% endblock %}</span>
         </div>
@@ -477,7 +761,7 @@
         <div class="topbar-date">
           {% now "d/m/Y" %}
         </div>
-        <button class="topbar-btn" title="Notificações">
+        <button class="topbar-btn" title="Notificacoes">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
           <span class="notif-dot"></span>
         </button>
@@ -485,7 +769,7 @@
     </header>
 
     <!-- Mensagens Django -->
-    <div class="content">
+    <div class="content fade-in">
       {% if messages %}
       <div class="messages">
         {% for msg in messages %}
@@ -500,20 +784,162 @@
   </div>
 </div>
 
+<!-- ── Bottom Navigation (mobile) ── -->
+<nav class="bottom-nav" id="bottomNav">
+  <div class="bottom-nav-inner">
+    {% if user.perfil == 'vendedor' %}
+    <a href="{% url 'accounts:dashboard_vendedor' %}" class="bottom-nav-item {% block bnav_dashboard %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      <span>Painel</span>
+    </a>
+    <a href="{% url 'clientes:lista' %}" class="bottom-nav-item {% block bnav_clientes %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <span>Clientes</span>
+    </a>
+    <a href="{% url 'emprestimos:lista' %}" class="bottom-nav-item {% block bnav_emprestimos %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+      <span>Emprestimos</span>
+    </a>
+    <a href="{% url 'clientes:mapa' %}" class="bottom-nav-item {% block bnav_mapa %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      <span>Mapa</span>
+    </a>
+    {% elif user.perfil == 'gerente' %}
+    <a href="{% url 'accounts:dashboard_gerente' %}" class="bottom-nav-item {% block bnav_dashboard_g %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      <span>Painel</span>
+    </a>
+    <a href="{% url 'rotas:lista' %}" class="bottom-nav-item {% block bnav_rotas %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      <span>Rotas</span>
+    </a>
+    <a href="{% url 'clientes:lista' %}" class="bottom-nav-item {% block bnav_clientes_g %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <span>Clientes</span>
+    </a>
+    <a href="{% url 'financeiro:caixa_lista' %}" class="bottom-nav-item {% block bnav_caixa %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+      <span>Caixa</span>
+    </a>
+    {% else %}
+    <a href="{% url 'accounts:dashboard_admin' %}" class="bottom-nav-item {% block bnav_dashboard_a %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      <span>Painel</span>
+    </a>
+    <a href="{% url 'rotas:lista' %}" class="bottom-nav-item {% block bnav_rotas_a %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      <span>Rotas</span>
+    </a>
+    <a href="{% url 'emprestimos:lista' %}" class="bottom-nav-item {% block bnav_emprestimos_a %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+      <span>Emprestimos</span>
+    </a>
+    <a href="{% url 'accounts:configuracoes' %}" class="bottom-nav-item {% block bnav_config %}{% endblock %}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.22-.05.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58z"/></svg>
+      <span>Config</span>
+    </a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- ── FAB (contexto: block fab_url) ── -->
+{% block fab %}{% endblock %}
+
+<!-- ── PWA Install Banner ── -->
+<div class="pwa-install-banner" id="pwaInstall">
+  <div class="pwa-install-icon">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.88 14.76V18h-1.75v-1.29c-1.62-.3-2.94-1.4-3.06-3.08h1.85c.11.92.79 1.62 2.1 1.62 1.22 0 1.93-.62 1.93-1.47 0-.75-.5-1.2-1.91-1.54l-.92-.22c-1.81-.44-2.88-1.33-2.88-2.93 0-1.53 1.19-2.66 2.89-2.94V5h1.75v1.17c1.6.28 2.7 1.3 2.77 2.87h-1.84c-.08-.91-.68-1.56-1.86-1.56-1.11 0-1.83.54-1.83 1.38 0 .72.52 1.15 1.77 1.47l.92.23c1.9.46 3.02 1.34 3.02 3.02 0 1.63-1.22 2.83-2.95 3.18z"/></svg>
+  </div>
+  <div class="pwa-install-text">
+    <div class="pwa-install-title">Instalar SystemPay</div>
+    <div class="pwa-install-sub">Acesse como app no seu celular</div>
+  </div>
+  <button class="pwa-install-btn" id="pwaInstallBtn" onclick="installPWA()">Instalar</button>
+  <button class="pwa-install-close" onclick="dismissInstall()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+  </button>
+</div>
+
 {% block extra_js %}{% endblock %}
 <script>
+/* ── Menu toggle ── */
 function toggleMenu(){
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('overlay').classList.toggle('show');
+  document.body.style.overflow = document.getElementById('sidebar').classList.contains('open') ? 'hidden' : '';
 }
-// Fecha sidebar ao clicar em link (mobile)
+
+/* Close sidebar on nav click (mobile) */
 document.querySelectorAll('.nav-link').forEach(function(a){
   a.addEventListener('click', function(){
     if(window.innerWidth<=768){
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('overlay').classList.remove('show');
+      document.body.style.overflow = '';
     }
   });
+});
+
+/* ── Service Worker Registration ── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+      .then(function(reg) {
+        console.log('SW registered:', reg.scope);
+      })
+      .catch(function(err) {
+        console.log('SW registration failed:', err);
+      });
+  });
+}
+
+/* ── PWA Install Prompt ── */
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  /* Show install banner after 30s if not dismissed */
+  if (!localStorage.getItem('pwa-install-dismissed')) {
+    setTimeout(function() {
+      document.getElementById('pwaInstall').classList.add('show');
+    }, 30000);
+  }
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(result) {
+      deferredPrompt = null;
+      document.getElementById('pwaInstall').classList.remove('show');
+    });
+  }
+}
+
+function dismissInstall() {
+  document.getElementById('pwaInstall').classList.remove('show');
+  localStorage.setItem('pwa-install-dismissed', '1');
+}
+
+/* ── Online/Offline status ── */
+function updateOnlineStatus() {
+  var indicator = document.getElementById('pullIndicator');
+  if (!navigator.onLine && indicator) {
+    indicator.textContent = 'Sem conexao';
+    indicator.classList.add('show');
+  } else if (indicator) {
+    indicator.classList.remove('show');
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+/* ── Haptic feedback for touch actions ── */
+document.querySelectorAll('.btn, .bottom-nav-item, .fab').forEach(function(el) {
+  el.addEventListener('touchstart', function() {
+    if (navigator.vibrate) navigator.vibrate(10);
+  }, { passive: true });
 });
 </script>
 </body>

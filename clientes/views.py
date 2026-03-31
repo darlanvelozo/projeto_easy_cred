@@ -6,7 +6,7 @@ from django.core.paginator import Paginator
 
 from accounts.decorators import requer_perfil
 from rotas.models import Rota, VendedorRota
-from emprestimos.models import Emprestimo
+from emprestimos.models import Emprestimo, Parcela
 from .models import Cliente
 from .forms import ClienteForm
 
@@ -154,18 +154,76 @@ def cliente_mapa(request):
     if rota_id:
         qs = qs.filter(rota_id=rota_id)
 
-    clientes_json = json.dumps([
-        {
+    # Pre-compute loan stats per client
+    from django.db.models import Count, Sum, Q
+    from datetime import date
+
+    clientes_list = list(qs)
+    cliente_ids = [c.pk for c in clientes_list]
+
+    # Active loans per client
+    emp_stats = {}
+    if cliente_ids:
+        for row in Emprestimo.objects.filter(
+            cliente_id__in=cliente_ids, status='ativo',
+        ).values('cliente_id').annotate(
+            total_ativos=Count('id'),
+            valor_carteira=Sum('valor_total'),
+        ):
+            emp_stats[row['cliente_id']] = (row['total_ativos'], row['valor_carteira'])
+
+    # Overdue installments per client
+    parcelas_atrasadas = {}
+    if cliente_ids:
+        for row in Parcela.objects.filter(
+            emprestimo__cliente_id__in=cliente_ids,
+            status='atrasada',
+        ).values('emprestimo__cliente_id').annotate(
+            qtd=Count('id'),
+            valor=Sum('valor'),
+        ):
+            parcelas_atrasadas[row['emprestimo__cliente_id']] = (row['qtd'], row['valor'])
+
+    # Today's installments per client
+    hoje = date.today()
+    parcelas_hoje = {}
+    if cliente_ids:
+        for row in Parcela.objects.filter(
+            emprestimo__cliente_id__in=cliente_ids,
+            vencimento=hoje,
+            status='pendente',
+        ).values('emprestimo__cliente_id').annotate(
+            qtd=Count('id'),
+            valor=Sum('valor'),
+        ):
+            parcelas_hoje[row['emprestimo__cliente_id']] = (row['qtd'], row['valor'])
+
+    clientes_data = []
+    for c in clientes_list:
+        emp_info = emp_stats.get(c.pk)
+        atraso_info = parcelas_atrasadas.get(c.pk)
+        hoje_info = parcelas_hoje.get(c.pk)
+
+        clientes_data.append({
             'id': c.pk,
             'nome': c.nome,
-            'telefone': c.telefone,
+            'telefone': c.telefone or '',
+            'cpf': c.cpf or '',
             'rota': c.rota.nome if c.rota else '',
-            'endereco': c.endereco,
+            'endereco': c.endereco or '',
+            'bairro': c.bairro or '',
+            'cidade': (c.cidade + '/' + c.uf) if c.cidade else '',
             'lat': float(c.latitude),
             'lng': float(c.longitude),
-        }
-        for c in qs
-    ])
+            'emprestimos_ativos': emp_info[0] if emp_info else 0,
+            'valor_carteira': float(emp_info[1] or 0) if emp_info else 0,
+            'parcelas_atrasadas': atraso_info[0] if atraso_info else 0,
+            'valor_atrasado': float(atraso_info[1] or 0) if atraso_info else 0,
+            'parcelas_hoje': hoje_info[0] if hoje_info else 0,
+            'valor_hoje': float(hoje_info[1] or 0) if hoje_info else 0,
+        })
+
+    clientes_json = json.dumps(clientes_data)
 
     rotas = Rota.objects.filter(empresa=empresa, ativa=True).order_by('nome')
     if request.user.perfil == 'vendedor':

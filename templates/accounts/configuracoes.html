@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Configurações{% endblock %}
 {% block nav_config %}active{% endblock %}
+{% block bnav_config %}active{% endblock %}
 {% block page_title %}Configurações{% endblock %}
 {% block page_sub %}Dados da empresa, rotas e equipe{% endblock %}
 
@@ -21,8 +22,8 @@
   .cfg-form .form-group.full { grid-column: 1 / -1; }
   .cfg-form label { font-size: .75rem; font-weight: 600; color: var(--text-muted); }
   .cfg-form input, .cfg-form select {
-    padding: .45rem .65rem; border: 1px solid var(--card-border); border-radius: 6px;
-    font-size: .825rem; font-family: inherit; background: #fff;
+    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
+    font-size: .85rem; font-family: inherit; background: #fff; min-height: 44px;
   }
   .cfg-form input:focus, .cfg-form select:focus {
     outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1);

@@ -1,75 +1,49 @@
 {% extends "base.html" %}
 {% block title %}Cancelar Emprestimo #{{ emp.pk }}{% endblock %}
 {% block nav_emprestimos %}active{% endblock %}
-{% block page_title %}Cancelar Emprestimo #{{ emp.pk }}{% endblock %}
+{% block page_title %}Cancelar Emprestimo{% endblock %}
 {% block page_sub %}{{ emp.cliente.nome }} — {{ emp.rota.nome }}{% endblock %}
 
 {% block extra_head %}
 <style>
   .cancel-warning {
     background: #fef2f2; border: 1px solid #fca5a5; border-radius: var(--card-radius);
-    padding: 1.25rem; margin-bottom: 1.25rem; color: #dc2626;
+    padding: 1rem; margin-bottom: 1rem; color: #dc2626; font-size: .85rem;
   }
-  .cancel-warning h3 { font-size: .95rem; margin-bottom: .5rem; }
-  .cancel-warning p { font-size: .85rem; margin: .25rem 0; }
+  .cancel-warning h3 { font-size: .9rem; margin-bottom: .35rem; }
   .cancel-summary {
-    background: var(--page-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
-    padding: 1.25rem; margin-bottom: 1.25rem;
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
+    padding: 1rem; margin-bottom: 1rem; box-shadow: var(--shadow-sm);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem;
   }
-  .cancel-item-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
-  .cancel-item-value { font-size: 1.1rem; font-weight: 700; margin-top: .2rem; }
-  .form-group { display: flex; flex-direction: column; gap: .3rem; margin-bottom: 1rem; }
-  .form-group label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); }
-  .form-group textarea {
-    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
-    font-size: .875rem; font-family: inherit; background: #fff;
-  }
-  .form-group textarea:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
-  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
-  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem 1.25rem; border-radius: 8px; font-size: .875rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; }
-  .btn-red { background: var(--red); color: #fff; }
-  .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .cancel-item-label { font-size: .68rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+  .cancel-item-value { font-size: 1rem; font-weight: 700; margin-top: .15rem; }
+  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+
+  @media (max-width: 768px) { .cancel-summary { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 480px) { .cancel-summary { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="cancel-warning">
-  <h3>Atenção: esta acao nao pode ser desfeita</h3>
+  <h3>Atencao: esta acao nao pode ser desfeita</h3>
   <p>O cancelamento ira estornar o valor no caixa e cancelar todas as parcelas pendentes.</p>
-  <p>Parcelas ja pagas serao mantidas e o estorno sera parcial.</p>
 </div>
 
 <div class="cancel-summary">
+  <div><div class="cancel-item-label">Cliente</div><div class="cancel-item-value">{{ emp.cliente.nome }}</div></div>
+  <div><div class="cancel-item-label">Valor Principal</div><div class="cancel-item-value">R$ {{ emp.valor_principal|floatformat:2 }}</div></div>
+  <div><div class="cancel-item-label">Valor Total</div><div class="cancel-item-value">R$ {{ emp.valor_total|floatformat:2 }}</div></div>
+  <div><div class="cancel-item-label">Parcelas</div><div class="cancel-item-value">{{ emp.num_parcelas }}x R$ {{ emp.valor_parcela|floatformat:2 }}</div></div>
   <div>
-    <div class="cancel-item-label">Cliente</div>
-    <div class="cancel-item-value">{{ emp.cliente.nome }}</div>
-  </div>
-  <div>
-    <div class="cancel-item-label">Valor Principal</div>
-    <div class="cancel-item-value">R$ {{ emp.valor_principal|floatformat:2 }}</div>
-  </div>
-  <div>
-    <div class="cancel-item-label">Valor Total</div>
-    <div class="cancel-item-value">R$ {{ emp.valor_total|floatformat:2 }}</div>
-  </div>
-  <div>
-    <div class="cancel-item-label">Parcelas</div>
-    <div class="cancel-item-value">{{ emp.num_parcelas }}x R$ {{ emp.valor_parcela|floatformat:2 }}</div>
-  </div>
-  <div>
-    <div class="cancel-item-label">Status Atual</div>
+    <div class="cancel-item-label">Status</div>
     <div class="cancel-item-value">
       {% if emp.status == 'ativo' %}<span class="badge badge-green">Ativo</span>
-      {% elif emp.status == 'inadimplente' %}<span class="badge badge-red">Inadimplente</span>
-      {% endif %}
+      {% elif emp.status == 'inadimplente' %}<span class="badge badge-red">Inadimplente</span>{% endif %}
     </div>
   </div>
-  <div>
-    <div class="cancel-item-label">Rota</div>
-    <div class="cancel-item-value">{{ emp.rota.nome }}</div>
-  </div>
+  <div><div class="cancel-item-label">Rota</div><div class="cancel-item-value">{{ emp.rota.nome }}</div></div>
 </div>
 
 <div class="card">
@@ -78,7 +52,7 @@
       {% csrf_token %}
       <div class="form-group">
         <label for="motivo">Motivo do cancelamento *</label>
-        <textarea id="motivo" name="motivo" rows="3" placeholder="Descreva o motivo do cancelamento..." required></textarea>
+        <textarea id="motivo" name="motivo" rows="3" placeholder="Descreva o motivo..." required></textarea>
       </div>
       <div class="form-actions">
         <button type="submit" class="btn btn-red">Confirmar Cancelamento</button>

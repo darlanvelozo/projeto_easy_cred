@@ -1,28 +1,55 @@
 {% extends "base.html" %}
 {% block title %}Clientes{% endblock %}
 {% block nav_clientes %}active{% endblock %}
+{% block bnav_clientes %}active{% endblock %}
+{% block bnav_clientes_g %}active{% endblock %}
 {% block page_title %}Clientes{% endblock %}
-{% block page_sub %}{{ total }} cliente{{ total|pluralize:"s" }} encontrado{{ total|pluralize:"s" }}{% endblock %}
+{% block page_sub %}{{ total }} cliente{{ total|pluralize:"s" }}{% endblock %}
+
+{% block fab %}
+<a href="{% url 'clientes:criar' %}" class="fab" title="Novo cliente">
+  <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+</a>
+{% endblock %}
 
 {% block extra_head %}
 <style>
   .filter-bar {
-    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
-    margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+    margin-bottom: 1rem;
   }
   .filter-bar input, .filter-bar select {
-    padding: .5rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
-    font-size: .85rem; font-family: inherit; background: #fff;
+    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
+    font-size: .85rem; font-family: inherit; background: #fff; min-height: 44px;
   }
-  .filter-bar input { flex: 1; min-width: 200px; }
-  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; border-radius: 8px; font-size: .85rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
-  .btn:hover { opacity: .85; }
-  .btn-primary { background: var(--blue); color: #fff; }
-  .btn-sm { padding: .3rem .6rem; font-size: .75rem; }
-  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
-  .pagination { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: 1.25rem; }
-  .pagination a, .pagination span { padding: .4rem .75rem; border-radius: 6px; font-size: .8rem; text-decoration: none; color: var(--text-secondary); border: 1px solid var(--card-border); }
+  .filter-bar input { flex: 1; min-width: 160px; }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: .4rem; margin-top: 1rem; flex-wrap: wrap; }
+  .pagination a, .pagination span { padding: .45rem .75rem; border-radius: 6px; font-size: .8rem; text-decoration: none; color: var(--text-secondary); border: 1px solid var(--card-border); min-height: 40px; display: inline-flex; align-items: center; }
   .pagination .current { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  /* Mobile card list */
+  .mobile-card-list { display: none; }
+  .mobile-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .85rem 1rem; border-bottom: 1px solid var(--card-border);
+    text-decoration: none; color: inherit; gap: .5rem;
+    transition: background .15s;
+  }
+  .mobile-card:active { background: #f8fafc; }
+  .mobile-card:last-child { border-bottom: none; }
+  .mobile-card-info { flex: 1; min-width: 0; }
+  .mobile-card-name { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mobile-card-meta { font-size: .72rem; color: var(--text-muted); margin-top: .15rem; display: flex; gap: .5rem; flex-wrap: wrap; }
+  .mobile-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: .25rem; flex-shrink: 0; }
+  .mobile-card-chevron { color: var(--text-muted); }
+  .mobile-card-chevron svg { width: 16px; height: 16px; }
+
+  @media (max-width: 768px) {
+    .desktop-table { display: none; }
+    .mobile-card-list { display: block; }
+    .filter-bar .btn-desktop { display: none; }
+    .filter-bar input { min-width: 120px; }
+  }
 </style>
 {% endblock %}
 
@@ -41,16 +68,16 @@
     <option value="ativo" {% if status_filtro == "ativo" %}selected{% endif %}>Ativos</option>
     <option value="inativo" {% if status_filtro == "inativo" %}selected{% endif %}>Inativos</option>
   </select>
-  <button type="submit" class="btn btn-outline">Buscar</button>
-  <a href="{% url 'clientes:mapa' %}" class="btn btn-outline">
+  <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
+  <a href="{% url 'clientes:mapa' %}" class="btn btn-secondary btn-sm btn-desktop">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
     Mapa
   </a>
-  <a href="{% url 'clientes:criar' %}" class="btn btn-primary">+ Novo Cliente</a>
+  <a href="{% url 'clientes:criar' %}" class="btn btn-primary btn-sm btn-desktop">+ Novo Cliente</a>
 </form>
 
-<!-- Tabela -->
-<div class="card">
+<!-- Desktop Table -->
+<div class="card desktop-table">
   <div class="table-wrap">
     <table>
       <thead>
@@ -61,17 +88,17 @@
           <th>Rota</th>
           <th>Cidade</th>
           <th>Status</th>
-          <th>Ações</th>
+          <th>Acoes</th>
         </tr>
       </thead>
       <tbody>
         {% for c in page %}
         <tr>
           <td style="font-weight:500"><a href="{% url 'clientes:detalhe' c.pk %}" style="color:inherit;text-decoration:none">{{ c.nome }}</a></td>
-          <td class="td-muted">{{ c.cpf|default:"—" }}</td>
-          <td class="td-muted">{{ c.telefone|default:"—" }}</td>
-          <td class="td-muted">{{ c.rota.nome|default:"—" }}</td>
-          <td class="td-muted">{% if c.cidade %}{{ c.cidade }}/{{ c.uf }}{% else %}—{% endif %}</td>
+          <td class="td-muted">{{ c.cpf|default:"-" }}</td>
+          <td class="td-muted">{{ c.telefone|default:"-" }}</td>
+          <td class="td-muted">{{ c.rota.nome|default:"-" }}</td>
+          <td class="td-muted">{% if c.cidade %}{{ c.cidade }}/{{ c.uf }}{% else %}-{% endif %}</td>
           <td>
             {% if c.ativo %}
             <span class="badge badge-green">Ativo</span>
@@ -80,7 +107,7 @@
             {% endif %}
           </td>
           <td>
-            <a href="{% url 'clientes:editar' c.pk %}" class="btn btn-sm btn-outline">Editar</a>
+            <a href="{% url 'clientes:editar' c.pk %}" class="btn btn-sm btn-secondary">Editar</a>
           </td>
         </tr>
         {% empty %}
@@ -91,7 +118,33 @@
   </div>
 </div>
 
-<!-- Paginação -->
+<!-- Mobile Card List -->
+<div class="card mobile-card-list">
+  {% for c in page %}
+  <a href="{% url 'clientes:detalhe' c.pk %}" class="mobile-card">
+    <div class="mobile-card-info">
+      <div class="mobile-card-name">{{ c.nome }}</div>
+      <div class="mobile-card-meta">
+        {% if c.rota %}<span>{{ c.rota.nome }}</span>{% endif %}
+        {% if c.telefone %}<span>{{ c.telefone }}</span>{% endif %}
+        {% if c.cidade %}<span>{{ c.cidade }}/{{ c.uf }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="mobile-card-right">
+      {% if c.ativo %}
+      <span class="badge badge-green">Ativo</span>
+      {% else %}
+      <span class="badge badge-gray">Inativo</span>
+      {% endif %}
+      <div class="mobile-card-chevron"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></div>
+    </div>
+  </a>
+  {% empty %}
+  <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.85rem">Nenhum cliente encontrado.</div>
+  {% endfor %}
+</div>
+
+<!-- Paginacao -->
 {% if page.has_other_pages %}
 <div class="pagination">
   {% if page.has_previous %}
@@ -105,7 +158,7 @@
     {% endif %}
   {% endfor %}
   {% if page.has_next %}
-  <a href="?page={{ page.next_page_number }}&q={{ q }}&rota={{ rota_filtro }}&status={{ status_filtro }}">Próxima</a>
+  <a href="?page={{ page.next_page_number }}&q={{ q }}&rota={{ rota_filtro }}&status={{ status_filtro }}">Proxima</a>
   {% endif %}
 </div>
 {% endif %}

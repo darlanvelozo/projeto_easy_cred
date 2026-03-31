@@ -1,29 +1,52 @@
 {% extends "base.html" %}
-{% block title %}Empréstimos{% endblock %}
+{% block title %}Emprestimos{% endblock %}
 {% block nav_emprestimos %}active{% endblock %}
-{% block page_title %}Empréstimos{% endblock %}
-{% block page_sub %}{{ total }} empréstimo{{ total|pluralize:"s" }}{% endblock %}
+{% block bnav_emprestimos %}active{% endblock %}
+{% block bnav_emprestimos_a %}active{% endblock %}
+{% block page_title %}Emprestimos{% endblock %}
+{% block page_sub %}{{ total }} emprestimo{{ total|pluralize:"s" }}{% endblock %}
+
+{% block fab %}
+<a href="{% url 'emprestimos:criar' %}" class="fab" title="Novo emprestimo">
+  <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+</a>
+{% endblock %}
 
 {% block extra_head %}
 <style>
   .filter-bar {
-    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
-    margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+    margin-bottom: 1rem;
   }
   .filter-bar input, .filter-bar select {
-    padding: .5rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
-    font-size: .85rem; font-family: inherit; background: #fff;
+    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
+    font-size: .85rem; font-family: inherit; background: #fff; min-height: 44px;
   }
-  .filter-bar input { flex: 1; min-width: 200px; }
-  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; border-radius: 8px; font-size: .85rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
-  .btn:hover { opacity: .85; }
-  .btn-primary { background: var(--blue); color: #fff; }
-  .btn-sm { padding: .3rem .6rem; font-size: .75rem; }
-  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
-  .btn-green { background: var(--green); color: #fff; }
-  .pagination { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: 1.25rem; }
-  .pagination a, .pagination span { padding: .4rem .75rem; border-radius: 6px; font-size: .8rem; text-decoration: none; color: var(--text-secondary); border: 1px solid var(--card-border); }
+  .filter-bar input { flex: 1; min-width: 160px; }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: .4rem; margin-top: 1rem; flex-wrap: wrap; }
+  .pagination a, .pagination span { padding: .45rem .75rem; border-radius: 6px; font-size: .8rem; text-decoration: none; color: var(--text-secondary); border: 1px solid var(--card-border); min-height: 40px; display: inline-flex; align-items: center; }
   .pagination .current { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  .mobile-card-list { display: none; }
+  .emp-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .85rem 1rem; border-bottom: 1px solid var(--card-border);
+    text-decoration: none; color: inherit; gap: .5rem;
+    transition: background .15s;
+  }
+  .emp-card:active { background: #f8fafc; }
+  .emp-card:last-child { border-bottom: none; }
+  .emp-card-info { flex: 1; min-width: 0; }
+  .emp-card-name { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .emp-card-meta { font-size: .72rem; color: var(--text-muted); margin-top: .15rem; display: flex; gap: .5rem; flex-wrap: wrap; }
+  .emp-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: .2rem; flex-shrink: 0; }
+  .emp-card-valor { font-size: .9rem; font-weight: 700; }
+
+  @media (max-width: 768px) {
+    .desktop-table { display: none; }
+    .mobile-card-list { display: block; }
+    .filter-bar .btn-desktop { display: none; }
+  }
 </style>
 {% endblock %}
 
@@ -31,7 +54,7 @@
 <form class="filter-bar" method="get">
   <input type="text" name="q" value="{{ q }}" placeholder="Buscar por cliente...">
   <select name="status" onchange="this.form.submit()">
-    <option value="">Todos os status</option>
+    <option value="">Todos</option>
     <option value="ativo" {% if status_filtro == "ativo" %}selected{% endif %}>Ativo</option>
     <option value="quitado" {% if status_filtro == "quitado" %}selected{% endif %}>Quitado</option>
     <option value="inadimplente" {% if status_filtro == "inadimplente" %}selected{% endif %}>Inadimplente</option>
@@ -43,11 +66,12 @@
     <option value="{{ r.id }}" {% if rota_filtro == r.id|stringformat:"d" %}selected{% endif %}>{{ r.nome }}</option>
     {% endfor %}
   </select>
-  <button type="submit" class="btn btn-outline">Buscar</button>
-  <a href="{% url 'emprestimos:criar' %}" class="btn btn-green">+ Novo Empréstimo</a>
+  <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
+  <a href="{% url 'emprestimos:criar' %}" class="btn btn-green btn-sm btn-desktop">+ Novo Emprestimo</a>
 </form>
 
-<div class="card">
+<!-- Desktop Table -->
+<div class="card desktop-table">
   <div class="table-wrap">
     <table>
       <thead>
@@ -79,14 +103,39 @@
             {% else %}<span class="badge badge-gray">Cancelado</span>{% endif %}
           </td>
           <td class="td-muted">{{ e.criado_em|date:"d/m/Y" }}</td>
-          <td><a href="{% url 'emprestimos:detalhe' e.pk %}" class="btn btn-sm btn-outline">Ver</a></td>
+          <td><a href="{% url 'emprestimos:detalhe' e.pk %}" class="btn btn-sm btn-secondary">Ver</a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum empréstimo encontrado.</td></tr>
+        <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum emprestimo encontrado.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+</div>
+
+<!-- Mobile Card List -->
+<div class="card mobile-card-list">
+  {% for e in page %}
+  <a href="{% url 'emprestimos:detalhe' e.pk %}" class="emp-card">
+    <div class="emp-card-info">
+      <div class="emp-card-name">{{ e.cliente.nome }}</div>
+      <div class="emp-card-meta">
+        <span>{{ e.rota.nome }}</span>
+        <span>{{ e.num_parcelas }}x {{ e.get_periodicidade_display }}</span>
+        <span>{{ e.criado_em|date:"d/m" }}</span>
+      </div>
+    </div>
+    <div class="emp-card-right">
+      <div class="emp-card-valor">R$ {{ e.valor_total|floatformat:2 }}</div>
+      {% if e.status == 'ativo' %}<span class="badge badge-green">Ativo</span>
+      {% elif e.status == 'quitado' %}<span class="badge badge-blue">Quitado</span>
+      {% elif e.status == 'inadimplente' %}<span class="badge badge-red">Inadimplente</span>
+      {% else %}<span class="badge badge-gray">Cancelado</span>{% endif %}
+    </div>
+  </a>
+  {% empty %}
+  <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.85rem">Nenhum emprestimo encontrado.</div>
+  {% endfor %}
 </div>
 
 {% if page.has_other_pages %}
@@ -102,7 +151,7 @@
     {% endif %}
   {% endfor %}
   {% if page.has_next %}
-  <a href="?page={{ page.next_page_number }}&q={{ q }}&status={{ status_filtro }}&rota={{ rota_filtro }}">Próxima</a>
+  <a href="?page={{ page.next_page_number }}&q={{ q }}&status={{ status_filtro }}&rota={{ rota_filtro }}">Proxima</a>
   {% endif %}
 </div>
 {% endif %}

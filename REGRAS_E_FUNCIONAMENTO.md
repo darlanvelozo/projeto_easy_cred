@@ -373,15 +373,24 @@ Usuario acessa /clientes/mapa/
    - Vendedor: veem apenas suas rotas
         |
         v
-[Busca clientes com lat/lng]
+[Busca clientes com lat/lng + dados financeiros]
    - Filtra: ativo=True, latitude e longitude preenchidos
+   - Pre-computa via annotate (sem N+1):
+     - emprestimos_ativos e valor_carteira por cliente
+     - parcelas_atrasadas e valor_atrasado por cliente
+     - parcelas_hoje e valor_hoje por cliente
    - Serializa em JSON para o frontend
         |
         v
-[Leaflet (OpenStreetMap)]
-   - Renderiza mapa com marcadores para cada cliente
-   - Popup: nome, rota, telefone, endereco, link para detalhe
-   - Mapa centralizado e com zoom ajustado aos marcadores
+[Leaflet (OpenStreetMap) — mapa interativo]
+   - Markers coloridos por status:
+     - Verde: em dia | Amarelo: cobranca hoje
+     - Vermelho: inadimplente | Azul: sem emprestimo
+   - Busca flutuante: filtra markers em tempo real
+   - Filtros rapidos: chips "Todos", "Cobranca hoje", "Inadimplentes"
+   - Bottom sheet ao clicar: metricas, dados, acoes (perfil, ligar, navegar)
+   - GPS: botao "Minha localizacao" para vendedor se localizar
+   - Swipe-to-dismiss no bottom sheet
 ```
 
 ---

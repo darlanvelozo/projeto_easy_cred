@@ -1,9 +1,19 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
   <title>SystemPay — Entrar</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="{% static 'manifest.json' %}" />
+  <meta name="theme-color" content="#0b1120" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SystemPay" />
+  <link rel="apple-touch-icon" href="{% static 'icons/icon-192.svg' %}" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -366,11 +376,29 @@
       50% { opacity: .4; }
     }
 
+    /* ── Touch targets ─────────────────────────────── */
+    .field-input { min-height: 48px; }
+    .btn-login { min-height: 48px; touch-action: manipulation; }
+    .toggle-password { min-width: 44px; min-height: 44px; }
+    .checkbox-label input { width: 18px; height: 18px; }
+    a, button { -webkit-tap-highlight-color: transparent; }
+
     /* ── Responsividade ─────────────────────────────── */
     @media (max-width: 900px) {
       .brand-panel { display: none; }
       .form-panel { width: 100%; padding: 2rem 1.5rem; }
       .form-panel::before { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .form-panel { padding: 1.5rem 1.25rem; }
+      .form-title { font-size: 1.3rem; }
+      .form-subtitle { font-size: .85rem; }
+    }
+
+    /* Standalone PWA */
+    @media (display-mode: standalone) {
+      .form-panel { padding-top: calc(2rem + env(safe-area-inset-top, 0px)); }
     }
   </style>
 </head>
@@ -532,6 +560,13 @@
 </div>
 
 <script>
+  /* Service Worker */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+    });
+  }
+
   function togglePassword() {
     const input = document.getElementById('password');
     const icon  = document.getElementById('eye-icon');

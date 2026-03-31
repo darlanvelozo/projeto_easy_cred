@@ -1,32 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block nav_emprestimos %}active{% endblock %}
+{% block bnav_emprestimos %}active{% endblock %}
 {% block page_title %}{{ titulo }}{% endblock %}
-{% block page_sub %}Preencha os dados do empréstimo{% endblock %}
+{% block page_sub %}Preencha os dados do emprestimo{% endblock %}
 
 {% block extra_head %}
 <style>
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; }
-  .form-group { display: flex; flex-direction: column; gap: .3rem; }
-  .form-group.full { grid-column: 1 / -1; }
-  .form-group label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); }
-  .form-group input, .form-group select, .form-group textarea {
-    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
-    font-size: .875rem; font-family: inherit; background: #fff; transition: border-color .15s;
-  }
-  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
-  }
-  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
-  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem 1.25rem; border-radius: 8px; font-size: .875rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
-  .btn:hover { opacity: .85; }
-  .btn-primary { background: var(--green); color: #fff; }
-  .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
-  .errorlist { list-style: none; padding: 0; margin: .2rem 0 0; }
-  .errorlist li { font-size: .75rem; color: var(--red); }
   .preview-box {
-    background: var(--page-bg); border: 1px solid var(--card-border); border-radius: 8px;
-    padding: 1rem; margin-top: .5rem;
+    background: var(--page-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
+    padding: 1rem; margin-top: .75rem;
   }
   .preview-row { display: flex; justify-content: space-between; font-size: .85rem; padding: .2rem 0; }
   .preview-row .label { color: var(--text-muted); }
@@ -36,9 +19,21 @@
     background: #dbeafe; color: #1e40af; font-weight: 600; margin-top: .25rem;
   }
   .limit-warn {
-    font-size: .72rem; color: var(--red); font-weight: 600; margin-top: .2rem; display: none;
+    font-size: .75rem; color: var(--red); font-weight: 600; margin-top: .2rem; display: none;
   }
-  @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+
+  /* Mobile: sticky preview at bottom */
+  @media (max-width: 768px) {
+    .preview-box {
+      position: sticky; bottom: 72px; z-index: 40;
+      background: #fff; border: 1px solid var(--card-border);
+      box-shadow: 0 -2px 8px rgba(0,0,0,.08);
+      margin: .75rem -1rem 0;
+      border-radius: 12px 12px 0 0;
+      padding: .85rem 1rem;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -92,31 +87,31 @@
         {% if form.data_primeiro_vencimento.is_hidden %}
           {{ form.data_primeiro_vencimento }}
           <div class="form-group">
-            <label>1.o Vencimento</label>
+            <label>1o Vencimento</label>
             <span style="font-size:.85rem;color:var(--text-muted);padding:.55rem 0">Calculado automaticamente (amanha)</span>
           </div>
         {% else %}
         <div class="form-group">
-          <label for="id_data_primeiro_vencimento">1.o Vencimento *</label>
+          <label for="id_data_primeiro_vencimento">1o Vencimento *</label>
           {{ form.data_primeiro_vencimento }}
           {{ form.data_primeiro_vencimento.errors }}
         </div>
         {% endif %}
         <div class="form-group full">
-          <label for="id_observacao">Observação</label>
+          <label for="id_observacao">Observacao</label>
           {{ form.observacao }}
         </div>
       </div>
 
-      <!-- Prévia do cálculo -->
+      <!-- Previa do calculo -->
       <div class="preview-box" id="preview" style="display:none">
-        <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:.5rem;text-transform:uppercase">Prévia do empréstimo</div>
-        <div class="preview-row"><span class="label">Valor Total (c/ juros)</span><span class="value" id="prev-total">—</span></div>
-        <div class="preview-row"><span class="label">Valor da Parcela</span><span class="value" id="prev-parcela">—</span></div>
+        <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:.4rem;text-transform:uppercase">Previa do emprestimo</div>
+        <div class="preview-row"><span class="label">Valor Total (c/ juros)</span><span class="value" id="prev-total">-</span></div>
+        <div class="preview-row"><span class="label">Valor da Parcela</span><span class="value" id="prev-parcela">-</span></div>
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Criar Empréstimo</button>
+        <button type="submit" class="btn btn-green">Criar Emprestimo</button>
         <a href="{% url 'emprestimos:lista' %}" class="btn btn-secondary">Cancelar</a>
       </div>
     </form>
@@ -127,28 +122,27 @@
 {% block extra_js %}
 <script>
 (function(){
-  const rotaSel = document.getElementById('id_rota');
-  const vp = document.getElementById('id_valor_principal');
-  const tj = document.getElementById('id_taxa_juros');
-  const np = document.getElementById('id_num_parcelas');
-  const per = document.getElementById('id_periodicidade');
-  const prev = document.getElementById('preview');
-  const pTotal = document.getElementById('prev-total');
-  const pParc = document.getElementById('prev-parcela');
-  const configInfo = document.getElementById('rota-config-info');
-  const limitWarn = document.getElementById('limit-warn');
+  var rotaSel = document.getElementById('id_rota');
+  var vp = document.getElementById('id_valor_principal');
+  var tj = document.getElementById('id_taxa_juros');
+  var np = document.getElementById('id_num_parcelas');
+  var per = document.getElementById('id_periodicidade');
+  var prev = document.getElementById('preview');
+  var pTotal = document.getElementById('prev-total');
+  var pParc = document.getElementById('prev-parcela');
+  var configInfo = document.getElementById('rota-config-info');
+  var limitWarn = document.getElementById('limit-warn');
 
-  let limiteMax = null;
+  var limiteMax = null;
 
-  const periodicidadeLabels = {
-    'diario': 'Diário', 'semanal': 'Semanal',
+  var periodicidadeLabels = {
+    'diario': 'Diario', 'semanal': 'Semanal',
     'quinzenal': 'Quinzenal', 'mensal': 'Mensal'
   };
 
-  // Ao trocar a rota, busca config via AJAX e preenche campos
   if (rotaSel) {
     rotaSel.addEventListener('change', function(){
-      const rotaId = this.value;
+      var rotaId = this.value;
       limiteMax = null;
       configInfo.style.display = 'none';
       limitWarn.style.display = 'none';
@@ -156,18 +150,18 @@
       if (!rotaId) return;
 
       fetch('{% url "accounts:api_config_rota" rota_id=0 %}'.replace('/0/', '/' + rotaId + '/'))
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
           if (data.taxa_juros !== null) {
             tj.value = data.taxa_juros;
             np.value = data.num_parcelas;
             per.value = data.periodicidade;
             calc();
 
-            let info = periodicidadeLabels[data.periodicidade] || data.periodicidade;
+            var info = periodicidadeLabels[data.periodicidade] || data.periodicidade;
             info += ' · ' + data.taxa_juros + '% · ' + data.num_parcelas + 'x';
             if (data.limite_max) {
-              info += ' · máx R$ ' + parseFloat(data.limite_max).toFixed(2);
+              info += ' · max R$ ' + parseFloat(data.limite_max).toFixed(2);
               limiteMax = parseFloat(data.limite_max);
             }
             configInfo.textContent = 'Config: ' + info;
@@ -180,9 +174,9 @@
 
   function checkLimit() {
     if (limiteMax && vp) {
-      const val = parseFloat(vp.value) || 0;
+      var val = parseFloat(vp.value) || 0;
       if (val > limiteMax) {
-        limitWarn.textContent = 'Valor excede o limite da rota: máx R$ ' + limiteMax.toFixed(2);
+        limitWarn.textContent = 'Valor excede o limite da rota: max R$ ' + limiteMax.toFixed(2);
         limitWarn.style.display = 'block';
       } else {
         limitWarn.style.display = 'none';
@@ -193,12 +187,12 @@
   }
 
   function calc(){
-    const v = parseFloat(vp.value)||0;
-    const t = parseFloat(tj.value)||0;
-    const n = parseInt(np.value)||0;
+    var v = parseFloat(vp.value)||0;
+    var t = parseFloat(tj.value)||0;
+    var n = parseInt(np.value)||0;
     if(v>0 && n>0){
-      const total = v*(1+t/100);
-      const parc = total/n;
+      var total = v*(1+t/100);
+      var parc = total/n;
       pTotal.textContent = 'R$ '+total.toFixed(2);
       pParc.textContent = 'R$ '+parc.toFixed(2);
       prev.style.display='block';
@@ -208,7 +202,7 @@
     checkLimit();
   }
 
-  [vp,tj,np].forEach(el=>{if(el)el.addEventListener('input',calc)});
+  [vp,tj,np].forEach(function(el){if(el)el.addEventListener('input',calc)});
   calc();
 })();
 </script>

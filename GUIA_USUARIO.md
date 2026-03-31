@@ -194,10 +194,21 @@ Todos os emprestimos ativos do vendedor: cliente, rota, valor da parcela, parcel
 
 ### Mapa de Clientes (`/clientes/mapa/`)
 - Visualizacao dos clientes com localizacao no mapa (OpenStreetMap)
-- Filtro por rota
-- Popup com nome, rota, telefone e link para detalhe
+- **Markers coloridos por status:**
+  - Verde: em dia (emprestimos ativos sem atraso)
+  - Amarelo: cobranca hoje (parcelas vencem hoje)
+  - Vermelho: inadimplente (parcelas atrasadas)
+  - Azul: sem emprestimo ativo
+- **Busca flutuante:** filtra clientes em tempo real por nome, telefone, rota ou endereco
+- **Filtros rapidos:** chips "Todos", "Cobranca hoje", "Inadimplentes" na base do mapa
+- **Filtro por rota:** dropdown com selecao visual
+- **Bottom sheet de detalhes:** ao clicar no marker, painel deslizante com:
+  - Metricas: emprestimos ativos, valor carteira, parcelas atrasadas
+  - Dados: telefone, CPF, endereco completo, valor em atraso
+  - Acoes: Perfil, Ligar (link tel:), Navegar (Google Maps com rota)
+  - Swipe para baixo para fechar
+- **Minha localizacao:** botao GPS mostra posicao do vendedor no mapa
 - Vendedor ve apenas clientes das suas rotas
-- Botao de acesso na lista de clientes
 
 ### Cadastro de Cliente com GPS
 - No formulario de cliente, botao **"Usar GPS"** captura a localizacao do celular
@@ -307,14 +318,20 @@ Todos os emprestimos ativos do vendedor: cliente, rota, valor da parcela, parcel
 ## Fluxo Diario de Uso
 
 ### Vendedor (campo)
-1. Fazer login no celular
-2. Consultar **Cobrancas de hoje** no dashboard
-3. Abrir **Mapa** para planejar a rota de visitas
-4. Em cada cliente:
+1. **Instalar o app:** abrir o sistema no celular e aceitar "Adicionar a tela inicial" (PWA)
+2. Fazer login no celular — navegacao via **bottom tabs** (Painel, Clientes, Emprestimos, Mapa)
+3. Consultar **Cobrancas de hoje** no dashboard — usar **Quick Actions** para acoes rapidas
+4. Abrir **Mapa** para planejar a rota de visitas:
+   - Filtrar por "Cobranca hoje" para ver apenas clientes do dia
+   - Tocar no marker para ver detalhes e ligar direto
+   - Usar "Navegar" para abrir rota no Google Maps
+   - Ativar GPS para se localizar no mapa
+5. Em cada cliente:
    - Registrar pagamento das parcelas do dia (total ou parcial)
-   - Se novo cliente, cadastrar com GPS
-   - Se necessario, criar novo emprestimo
-5. Acompanhar **Recebido Hoje** para controle
+   - Se novo cliente, cadastrar com GPS (botao **+** flutuante)
+   - Se necessario, criar novo emprestimo (botao **+** flutuante)
+6. Acompanhar **Recebido Hoje** para controle
+7. O app funciona offline para paginas ja visitadas
 
 ### Gerente (supervisao)
 1. Verificar **desempenho dos vendedores** no dashboard

@@ -1,55 +1,547 @@
 {% extends "base.html" %}
 {% block title %}Mapa de Clientes{% endblock %}
 {% block nav_clientes %}active{% endblock %}
-{% block page_title %}Mapa de Clientes{% endblock %}
-{% block page_sub %}{{ total }} cliente{{ total|pluralize:"s" }} com localizacao{% endblock %}
+{% block bnav_mapa %}active{% endblock %}
+{% block page_title %}Mapa{% endblock %}
+{% block page_sub %}{{ total }} cliente{{ total|pluralize:"s" }} no mapa{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-  #map { width: 100%; height: 70vh; border-radius: 8px; border: 1px solid var(--card-border); }
-  .map-toolbar {
-    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
-    margin-bottom: 1rem;
+  /* ── Map container ── */
+  .map-container {
+    position: relative;
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow);
   }
-  .map-toolbar select {
-    padding: .45rem .65rem; border: 1px solid var(--card-border); border-radius: 6px;
-    font-size: .825rem; font-family: inherit; background: #fff;
+
+  #map {
+    width: 100%;
+    height: 72vh;
+    z-index: 1;
   }
-  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .85rem; border-radius: 6px; font-size: .8rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
-  .btn:hover { opacity: .85; }
-  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
-  .btn-primary { background: var(--blue); color: #fff; }
-  .map-empty { text-align: center; color: var(--text-muted); padding: 3rem 1rem; }
-  .map-empty p { margin: .5rem 0; font-size: .9rem; }
-  .leaflet-popup-content { font-family: inherit; font-size: .82rem; }
-  .popup-name { font-weight: 700; font-size: .9rem; margin-bottom: .3rem; }
-  .popup-info { color: #64748b; font-size: .78rem; line-height: 1.5; }
-  .popup-actions { margin-top: .5rem; }
-  .popup-actions a { font-size: .75rem; font-weight: 600; color: #2563eb; text-decoration: none; }
-  .popup-actions a:hover { text-decoration: underline; }
-  @media (max-width: 768px) { #map { height: 55vh; } }
+
+  /* ── Floating controls overlay ── */
+  .map-controls {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    pointer-events: none;
+  }
+
+  .map-controls > * { pointer-events: auto; }
+
+  .map-search {
+    flex: 1;
+    max-width: 320px;
+    position: relative;
+  }
+
+  .map-search-input {
+    width: 100%;
+    padding: .6rem .75rem .6rem 2.4rem;
+    border: none;
+    border-radius: 10px;
+    font-size: .85rem;
+    font-family: inherit;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    min-height: 44px;
+    color: var(--text-primary);
+    outline: none;
+  }
+
+  .map-search-input:focus {
+    box-shadow: 0 2px 16px rgba(37,99,235,.2);
+  }
+
+  .map-search-input::placeholder { color: var(--text-muted); }
+
+  .map-search-icon {
+    position: absolute;
+    left: .75rem; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .map-search-icon svg { width: 16px; height: 16px; }
+
+  .map-filter-btn {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary);
+    transition: background .15s;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .map-filter-btn:active { background: #f1f5f9; }
+  .map-filter-btn svg { width: 18px; height: 18px; }
+  .map-filter-btn.active { color: var(--blue); }
+  .map-filter-dot {
+    display: none;
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 8px; height: 8px;
+    background: var(--blue);
+    border-radius: 50%;
+    border: 2px solid #fff;
+  }
+  .map-filter-btn.active .map-filter-dot { display: block; }
+
+  /* ── Stats bar overlay ── */
+  .map-stats {
+    position: absolute;
+    bottom: 12px; left: 12px; right: 12px;
+    z-index: 1000;
+    display: flex;
+    gap: .4rem;
+    pointer-events: none;
+  }
+
+  .map-stat-chip {
+    pointer-events: auto;
+    display: flex; align-items: center; gap: .35rem;
+    padding: .4rem .7rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+  }
+
+  .map-stat-chip:active { background: #f1f5f9; }
+  .map-stat-chip.active { background: var(--blue); color: #fff; }
+
+  .map-stat-chip .stat-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .map-stat-chip .stat-count {
+    font-weight: 800;
+  }
+
+  /* ── Filter dropdown ── */
+  .map-filter-dropdown {
+    display: none;
+    position: absolute;
+    top: 64px; right: 12px;
+    z-index: 1001;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.16);
+    min-width: 220px;
+    overflow: hidden;
+  }
+
+  .map-filter-dropdown.show { display: block; }
+
+  .filter-dropdown-header {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--card-border);
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .filter-dropdown-item {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .7rem 1rem;
+    font-size: .85rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background .15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    min-height: 44px;
+  }
+
+  .filter-dropdown-item:hover { background: #f8fafc; }
+  .filter-dropdown-item.active { background: #eff6ff; color: var(--blue); font-weight: 600; }
+
+  .filter-dropdown-item .filter-check {
+    width: 18px; height: 18px;
+    border: 2px solid var(--card-border);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: border-color .15s, background .15s;
+  }
+
+  .filter-dropdown-item.active .filter-check {
+    background: var(--blue);
+    border-color: var(--blue);
+  }
+
+  .filter-dropdown-item.active .filter-check svg { display: block; }
+  .filter-dropdown-item .filter-check svg { display: none; width: 12px; height: 12px; fill: #fff; }
+
+  /* ── Client detail sheet ── */
+  .client-sheet {
+    display: none;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 1002;
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,.12);
+    max-height: 55vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    transform: translateY(100%);
+  }
+
+  .client-sheet.show {
+    display: block;
+    transform: translateY(0);
+  }
+
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: #d1d5db;
+    border-radius: 2px;
+    margin: 10px auto 0;
+  }
+
+  .sheet-header {
+    padding: .75rem 1.25rem;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: .5rem;
+  }
+
+  .sheet-name { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+  .sheet-route {
+    display: inline-flex; align-items: center; gap: .25rem;
+    font-size: .72rem; font-weight: 600; color: var(--blue);
+    background: #eff6ff; padding: .15rem .5rem; border-radius: 4px;
+    margin-top: .2rem;
+  }
+
+  .sheet-close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: #f1f5f9;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .sheet-close:active { background: #e2e8f0; }
+  .sheet-close svg { width: 16px; height: 16px; }
+
+  /* Sheet metric cards */
+  .sheet-metrics {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: .4rem;
+    padding: 0 1.25rem;
+    margin-bottom: .75rem;
+  }
+
+  .sheet-metric {
+    background: var(--page-bg);
+    border-radius: 8px;
+    padding: .55rem .6rem;
+    text-align: center;
+  }
+
+  .sheet-metric-value { font-size: .95rem; font-weight: 800; }
+  .sheet-metric-label { font-size: .6rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-top: .1rem; }
+
+  /* Sheet info rows */
+  .sheet-info { padding: 0 1.25rem; }
+
+  .sheet-info-row {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .5rem 0;
+    border-bottom: 1px solid #f8fafc;
+    font-size: .85rem;
+  }
+
+  .sheet-info-row:last-child { border-bottom: none; }
+
+  .sheet-info-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+
+  .sheet-info-icon svg { width: 14px; height: 14px; }
+
+  .sheet-info-content { flex: 1; min-width: 0; }
+  .sheet-info-label { font-size: .65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .sheet-info-value { font-weight: 500; margin-top: .05rem; word-break: break-word; }
+
+  /* Sheet actions */
+  .sheet-actions {
+    display: flex; gap: .5rem;
+    padding: .75rem 1.25rem 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .sheet-action {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: .35rem;
+    padding: .65rem;
+    border-radius: 10px;
+    font-size: .8rem;
+    font-weight: 600;
+    font-family: inherit;
+    text-decoration: none;
+    min-height: 44px;
+    cursor: pointer;
+    border: none;
+    transition: opacity .15s;
+  }
+
+  .sheet-action:active { opacity: .85; }
+  .sheet-action svg { width: 16px; height: 16px; }
+  .sheet-action-primary { background: var(--blue); color: #fff; }
+  .sheet-action-secondary { background: #f1f5f9; color: var(--text-secondary); }
+  .sheet-action-green { background: var(--green); color: #fff; }
+  .sheet-action-call { background: #dcfce7; color: #16a34a; }
+
+  /* ── Custom markers ── */
+  .custom-marker {
+    width: 36px; height: 36px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .65rem;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    border: 2.5px solid #fff;
+    transition: transform .2s;
+  }
+
+  .custom-marker span {
+    transform: rotate(45deg);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .custom-marker svg {
+    width: 14px; height: 14px;
+    fill: currentColor;
+    transform: rotate(45deg);
+  }
+
+  .marker-ok { background: var(--green); }
+  .marker-alert { background: var(--yellow); }
+  .marker-danger { background: var(--red); }
+  .marker-neutral { background: var(--blue); }
+
+  /* ── Locate me button ── */
+  .map-locate-btn {
+    position: absolute;
+    bottom: 56px; right: 12px;
+    z-index: 1000;
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary);
+    transition: background .15s;
+  }
+
+  .map-locate-btn:active { background: #f1f5f9; }
+  .map-locate-btn svg { width: 18px; height: 18px; }
+  .map-locate-btn.locating { color: var(--blue); animation: pulse-locate 1.5s infinite; }
+  @keyframes pulse-locate { 0%,100%{opacity:1}50%{opacity:.5} }
+
+  /* ── Empty state ── */
+  .map-empty {
+    text-align: center; color: var(--text-muted); padding: 3rem 1rem;
+    background: var(--card-bg); border-radius: var(--card-radius);
+    border: 1px solid var(--card-border);
+  }
+  .map-empty p { margin: .5rem 0; font-size: .88rem; }
+
+  /* ── Legend ── */
+  .map-legend {
+    position: absolute;
+    bottom: 56px; left: 12px;
+    z-index: 1000;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    padding: .5rem .65rem;
+    display: flex; flex-direction: column; gap: .3rem;
+  }
+
+  .legend-item {
+    display: flex; align-items: center; gap: .35rem;
+    font-size: .65rem; font-weight: 500; color: var(--text-secondary);
+  }
+
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    #map { height: calc(100vh - 130px); }
+    .map-container { border-radius: 0; border: none; box-shadow: none; margin: -.85rem; }
+    .map-controls { top: 8px; left: 8px; right: 8px; }
+    .map-stats { bottom: 8px; left: 8px; right: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .map-legend { bottom: 48px; left: 8px; }
+    .map-locate-btn { bottom: 48px; right: 8px; }
+
+    .client-sheet { max-height: 65vh; }
+    .sheet-metrics { grid-template-columns: repeat(3, 1fr); gap: .35rem; }
+
+    /* Hide stats when sheet is open */
+    .map-stats.hidden { display: none; }
+    .map-legend.hidden { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .map-search { max-width: none; flex: 1; }
+  }
+
+  /* Leaflet customization */
+  .leaflet-control-zoom { border-radius: 10px !important; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.12) !important; border: none !important; }
+  .leaflet-control-zoom a { width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 16px !important; color: var(--text-secondary) !important; border-bottom-color: #f1f5f9 !important; }
+  .leaflet-control-zoom a:hover { background: #f8fafc !important; }
+  .leaflet-control-attribution { font-size: .6rem !important; background: rgba(255,255,255,.7) !important; border-radius: 4px 0 0 0; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="map-toolbar">
-  <form method="get" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
-    <select name="rota" onchange="this.form.submit()">
-      <option value="">Todas as rotas</option>
-      {% for r in rotas %}
-      <option value="{{ r.id }}" {% if rota_filtro == r.id|stringformat:"d" %}selected{% endif %}>{{ r.nome }}</option>
-      {% endfor %}
-    </select>
-  </form>
-  <a href="{% url 'clientes:lista' %}" class="btn btn-outline">Voltar para lista</a>
+{% if total > 0 %}
+<div class="map-container">
+  <div id="map"></div>
+
+  <!-- Floating search + filter -->
+  <div class="map-controls">
+    <div class="map-search">
+      <span class="map-search-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      </span>
+      <input type="text" class="map-search-input" id="mapSearch" placeholder="Buscar cliente no mapa..." autocomplete="off" />
+    </div>
+    <button class="map-filter-btn" id="filterBtn" onclick="toggleFilterDropdown()" title="Filtrar por rota">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+      <span class="map-filter-dot"></span>
+    </button>
+  </div>
+
+  <!-- Filter dropdown -->
+  <div class="map-filter-dropdown" id="filterDropdown">
+    <div class="filter-dropdown-header">Filtrar por rota</div>
+    <button class="filter-dropdown-item {% if not rota_filtro %}active{% endif %}" onclick="filterByRoute('')">
+      <span class="filter-check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+      Todas as rotas
+    </button>
+    {% for r in rotas %}
+    <button class="filter-dropdown-item {% if rota_filtro == r.id|stringformat:'d' %}active{% endif %}" onclick="filterByRoute('{{ r.id }}')">
+      <span class="filter-check"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+      {{ r.nome }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <!-- Stats chips -->
+  <div class="map-stats" id="mapStats">
+    <div class="map-stat-chip active" onclick="filterMarkers('todos')">
+      <span class="stat-dot" style="background:var(--blue)"></span>
+      <span>Todos</span>
+      <span class="stat-count" id="statTotal">{{ total }}</span>
+    </div>
+    <div class="map-stat-chip" onclick="filterMarkers('cobranca')">
+      <span class="stat-dot" style="background:var(--yellow)"></span>
+      <span>Cobranca hoje</span>
+      <span class="stat-count" id="statHoje">0</span>
+    </div>
+    <div class="map-stat-chip" onclick="filterMarkers('inadimplentes')">
+      <span class="stat-dot" style="background:var(--red)"></span>
+      <span>Inadimplentes</span>
+      <span class="stat-count" id="statInadim">0</span>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="map-legend" id="mapLegend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Em dia</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Cobranca hoje</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Inadimplente</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Sem emprestimo</div>
+  </div>
+
+  <!-- Locate me -->
+  <button class="map-locate-btn" id="locateBtn" onclick="locateMe()" title="Minha localizacao">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+  </button>
+
+  <!-- Client detail sheet -->
+  <div class="client-sheet" id="clientSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div>
+        <div class="sheet-name" id="sheetName"></div>
+        <div class="sheet-route" id="sheetRoute"></div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+
+    <div class="sheet-metrics" id="sheetMetrics">
+      <div class="sheet-metric">
+        <div class="sheet-metric-value" id="sheetEmprestimos" style="color:var(--blue)">0</div>
+        <div class="sheet-metric-label">Emprestimos</div>
+      </div>
+      <div class="sheet-metric">
+        <div class="sheet-metric-value" id="sheetCarteira">R$ 0</div>
+        <div class="sheet-metric-label">Carteira</div>
+      </div>
+      <div class="sheet-metric" id="sheetAtrasadoBox">
+        <div class="sheet-metric-value" id="sheetAtrasado" style="color:var(--red)">0</div>
+        <div class="sheet-metric-label">Atrasadas</div>
+      </div>
+    </div>
+
+    <div class="sheet-info" id="sheetInfo">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="sheet-actions" id="sheetActions">
+      <!-- Populated by JS -->
+    </div>
+  </div>
 </div>
 
-{% if total > 0 %}
-<div id="map"></div>
 {% else %}
-<div class="card map-empty">
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+<div class="map-empty">
+  <svg width="56" height="56" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
   <p>Nenhum cliente com localizacao cadastrada.</p>
   <p style="font-size:.78rem">Cadastre latitude e longitude nos clientes para visualizar no mapa.</p>
 </div>
@@ -61,45 +553,344 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function(){
-  const clientes = {{ clientes_json|safe }};
+  var clientes = {{ clientes_json|safe }};
   if (!clientes.length) return;
 
-  // Centro no primeiro cliente ou media das coordenadas
-  let latSum = 0, lngSum = 0;
-  clientes.forEach(c => { latSum += c.lat; lngSum += c.lng; });
-  const centerLat = latSum / clientes.length;
-  const centerLng = lngSum / clientes.length;
+  /* ── Compute center ── */
+  var latSum = 0, lngSum = 0;
+  clientes.forEach(function(c) { latSum += c.lat; lngSum += c.lng; });
 
-  const map = L.map('map').setView([centerLat, centerLng], 13);
+  var map = L.map('map', {
+    zoomControl: false,
+    attributionControl: true,
+  }).setView([latSum / clientes.length, lngSum / clientes.length], 13);
 
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  /* ── Tile layer (clean style) ── */
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
+    attribution: '&copy; OSM',
     maxZoom: 19,
   }).addTo(map);
 
-  const bounds = [];
+  /* ── Marker helpers ── */
+  function getMarkerStatus(c) {
+    if (c.parcelas_atrasadas > 0) return 'danger';
+    if (c.parcelas_hoje > 0) return 'alert';
+    if (c.emprestimos_ativos > 0) return 'ok';
+    return 'neutral';
+  }
 
-  clientes.forEach(c => {
-    const marker = L.marker([c.lat, c.lng]).addTo(map);
+  function getMarkerIcon(status) {
+    var colors = { ok: '#10b981', alert: '#f59e0b', danger: '#ef4444', neutral: '#2563eb' };
+    var cls = 'marker-' + status;
+    var icon = '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.88 14.76V18h-1.75v-1.29c-1.62-.3-2.94-1.4-3.06-3.08h1.85c.11.92.79 1.62 2.1 1.62 1.22 0 1.93-.62 1.93-1.47 0-.75-.5-1.2-1.91-1.54l-.92-.22c-1.81-.44-2.88-1.33-2.88-2.93 0-1.53 1.19-2.66 2.89-2.94V5h1.75v1.17c1.6.28 2.7 1.3 2.77 2.87h-1.84c-.08-.91-.68-1.56-1.86-1.56-1.11 0-1.83.54-1.83 1.38 0 .72.52 1.15 1.77 1.47l.92.23c1.9.46 3.02 1.34 3.02 3.02 0 1.63-1.22 2.83-2.95 3.18z"/></svg>';
+
+    return L.divIcon({
+      className: '',
+      html: '<div class="custom-marker ' + cls + '">' + icon + '</div>',
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+      popupAnchor: [0, -36],
+    });
+  }
+
+  /* ── Create markers ── */
+  var markers = [];
+  var bounds = [];
+  var countHoje = 0, countInadim = 0;
+
+  clientes.forEach(function(c) {
+    var status = getMarkerStatus(c);
+    var marker = L.marker([c.lat, c.lng], { icon: getMarkerIcon(status) });
+
+    marker.clientData = c;
+    marker.clientStatus = status;
+
+    marker.on('click', function() { openSheet(c); });
+    marker.addTo(map);
+    markers.push(marker);
     bounds.push([c.lat, c.lng]);
 
-    const popup = `
-      <div class="popup-name">${c.nome}</div>
-      <div class="popup-info">
-        ${c.rota ? '<strong>Rota:</strong> ' + c.rota + '<br>' : ''}
-        ${c.telefone ? '<strong>Tel:</strong> ' + c.telefone + '<br>' : ''}
-        ${c.endereco ? c.endereco : ''}
-      </div>
-      <div class="popup-actions">
-        <a href="/clientes/${c.id}/">Ver detalhes</a>
-      </div>
-    `;
-    marker.bindPopup(popup);
+    if (c.parcelas_hoje > 0) countHoje++;
+    if (c.parcelas_atrasadas > 0) countInadim++;
   });
 
   if (bounds.length > 1) {
-    map.fitBounds(bounds, { padding: [30, 30] });
+    map.fitBounds(bounds, { padding: [50, 50] });
   }
+
+  /* Update stats */
+  document.getElementById('statTotal').textContent = clientes.length;
+  document.getElementById('statHoje').textContent = countHoje;
+  document.getElementById('statInadim').textContent = countInadim;
+
+  /* ── Search ── */
+  var searchInput = document.getElementById('mapSearch');
+  searchInput.addEventListener('input', function() {
+    var q = this.value.toLowerCase().trim();
+    markers.forEach(function(m) {
+      var c = m.clientData;
+      var match = !q ||
+        c.nome.toLowerCase().indexOf(q) >= 0 ||
+        c.telefone.toLowerCase().indexOf(q) >= 0 ||
+        c.rota.toLowerCase().indexOf(q) >= 0 ||
+        c.endereco.toLowerCase().indexOf(q) >= 0;
+
+      if (match) {
+        if (!map.hasLayer(m)) m.addTo(map);
+      } else {
+        if (map.hasLayer(m)) map.removeLayer(m);
+      }
+    });
+
+    /* If only one match, zoom to it */
+    var visible = markers.filter(function(m) { return map.hasLayer(m); });
+    if (visible.length === 1) {
+      var pos = visible[0].getLatLng();
+      map.setView(pos, 16);
+      openSheet(visible[0].clientData);
+    }
+  });
+
+  /* ── Filter by status chips ── */
+  var currentFilter = 'todos';
+
+  window.filterMarkers = function(filter) {
+    currentFilter = filter;
+
+    /* Update chip UI */
+    document.querySelectorAll('.map-stat-chip').forEach(function(chip) { chip.classList.remove('active'); });
+    event.currentTarget.classList.add('active');
+
+    markers.forEach(function(m) {
+      var show = false;
+      if (filter === 'todos') show = true;
+      else if (filter === 'cobranca') show = m.clientData.parcelas_hoje > 0;
+      else if (filter === 'inadimplentes') show = m.clientData.parcelas_atrasadas > 0;
+
+      if (show) {
+        if (!map.hasLayer(m)) m.addTo(map);
+      } else {
+        if (map.hasLayer(m)) map.removeLayer(m);
+      }
+    });
+
+    /* Refit bounds */
+    var visible = markers.filter(function(m) { return map.hasLayer(m); });
+    if (visible.length > 1) {
+      var b = visible.map(function(m) { return m.getLatLng(); });
+      map.fitBounds(b, { padding: [50, 50] });
+    } else if (visible.length === 1) {
+      map.setView(visible[0].getLatLng(), 15);
+    }
+  };
+
+  /* ── Route filter dropdown ── */
+  window.toggleFilterDropdown = function() {
+    var dd = document.getElementById('filterDropdown');
+    dd.classList.toggle('show');
+  };
+
+  window.filterByRoute = function(routeId) {
+    var params = new URLSearchParams(window.location.search);
+    if (routeId) params.set('rota', routeId);
+    else params.delete('rota');
+    window.location.search = params.toString();
+  };
+
+  /* Update filter btn state */
+  var rota_filtro = '{{ rota_filtro }}';
+  if (rota_filtro) {
+    document.getElementById('filterBtn').classList.add('active');
+  }
+
+  /* Close dropdown on outside click */
+  document.addEventListener('click', function(e) {
+    var dd = document.getElementById('filterDropdown');
+    var btn = document.getElementById('filterBtn');
+    if (!dd.contains(e.target) && !btn.contains(e.target)) {
+      dd.classList.remove('show');
+    }
+  });
+
+  /* ── Client sheet ── */
+  var activeClient = null;
+
+  window.openSheet = function(c) {
+    activeClient = c;
+
+    document.getElementById('sheetName').textContent = c.nome;
+    var routeEl = document.getElementById('sheetRoute');
+    if (c.rota) {
+      routeEl.style.display = 'inline-flex';
+      routeEl.textContent = c.rota;
+    } else {
+      routeEl.style.display = 'none';
+    }
+
+    document.getElementById('sheetEmprestimos').textContent = c.emprestimos_ativos;
+    document.getElementById('sheetCarteira').textContent = 'R$ ' + c.valor_carteira.toFixed(2);
+
+    var atrasadoEl = document.getElementById('sheetAtrasado');
+    var atrasadoBox = document.getElementById('sheetAtrasadoBox');
+    if (c.parcelas_atrasadas > 0) {
+      atrasadoEl.textContent = c.parcelas_atrasadas;
+      atrasadoEl.style.color = 'var(--red)';
+      atrasadoBox.querySelector('.sheet-metric-label').textContent = 'Atrasadas';
+    } else if (c.parcelas_hoje > 0) {
+      atrasadoEl.textContent = c.parcelas_hoje;
+      atrasadoEl.style.color = 'var(--yellow)';
+      atrasadoBox.querySelector('.sheet-metric-label').textContent = 'Hoje';
+    } else {
+      atrasadoEl.textContent = '0';
+      atrasadoEl.style.color = 'var(--green)';
+      atrasadoBox.querySelector('.sheet-metric-label').textContent = 'Atrasadas';
+    }
+
+    /* Info rows */
+    var infoHtml = '';
+
+    if (c.telefone) {
+      infoHtml += '<div class="sheet-info-row">' +
+        '<div class="sheet-info-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div>' +
+        '<div class="sheet-info-content"><div class="sheet-info-label">Telefone</div><div class="sheet-info-value">' + c.telefone + '</div></div></div>';
+    }
+
+    if (c.cpf) {
+      infoHtml += '<div class="sheet-info-row">' +
+        '<div class="sheet-info-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg></div>' +
+        '<div class="sheet-info-content"><div class="sheet-info-label">CPF</div><div class="sheet-info-value">' + c.cpf + '</div></div></div>';
+    }
+
+    if (c.endereco) {
+      var addr = c.endereco;
+      if (c.bairro) addr += ', ' + c.bairro;
+      if (c.cidade) addr += ' - ' + c.cidade;
+      infoHtml += '<div class="sheet-info-row">' +
+        '<div class="sheet-info-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>' +
+        '<div class="sheet-info-content"><div class="sheet-info-label">Endereco</div><div class="sheet-info-value">' + addr + '</div></div></div>';
+    }
+
+    if (c.valor_atrasado > 0) {
+      infoHtml += '<div class="sheet-info-row">' +
+        '<div class="sheet-info-icon" style="background:#fee2e2;color:var(--red)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>' +
+        '<div class="sheet-info-content"><div class="sheet-info-label">Valor em atraso</div><div class="sheet-info-value" style="color:var(--red);font-weight:700">R$ ' + c.valor_atrasado.toFixed(2) + ' (' + c.parcelas_atrasadas + ' parc.)</div></div></div>';
+    }
+
+    if (c.parcelas_hoje > 0 && c.parcelas_atrasadas === 0) {
+      infoHtml += '<div class="sheet-info-row">' +
+        '<div class="sheet-info-icon" style="background:#fef9c3;color:var(--yellow)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg></div>' +
+        '<div class="sheet-info-content"><div class="sheet-info-label">Cobranca hoje</div><div class="sheet-info-value" style="color:var(--yellow);font-weight:700">R$ ' + c.valor_hoje.toFixed(2) + ' (' + c.parcelas_hoje + ' parc.)</div></div></div>';
+    }
+
+    document.getElementById('sheetInfo').innerHTML = infoHtml;
+
+    /* Actions */
+    var actionsHtml = '<a href="/clientes/' + c.id + '/" class="sheet-action sheet-action-primary"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg> Perfil</a>';
+
+    if (c.telefone) {
+      actionsHtml += '<a href="tel:' + c.telefone.replace(/\D/g,'') + '" class="sheet-action sheet-action-call"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg> Ligar</a>';
+    }
+
+    actionsHtml += '<a href="https://www.google.com/maps/dir/?api=1&destination=' + c.lat + ',' + c.lng + '" target="_blank" rel="noopener" class="sheet-action sheet-action-secondary"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.71 11.29l-9-9c-.39-.39-1.02-.39-1.41 0l-9 9c-.39.39-.39 1.02 0 1.41l9 9c.39.39 1.02.39 1.41 0l9-9c.39-.38.39-1.01 0-1.41zM14 14.5V12h-4v3H8v-4c0-.55.45-1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg> Navegar</a>';
+
+    document.getElementById('sheetActions').innerHTML = actionsHtml;
+
+    /* Show sheet */
+    var sheet = document.getElementById('clientSheet');
+    sheet.classList.add('show');
+
+    /* Hide stats on mobile */
+    if (window.innerWidth <= 768) {
+      document.getElementById('mapStats').classList.add('hidden');
+      document.getElementById('mapLegend').classList.add('hidden');
+    }
+
+    /* Center map on marker */
+    map.setView([c.lat, c.lng], Math.max(map.getZoom(), 15));
+  };
+
+  window.closeSheet = function() {
+    var sheet = document.getElementById('clientSheet');
+    sheet.classList.remove('show');
+    document.getElementById('mapStats').classList.remove('hidden');
+    document.getElementById('mapLegend').classList.remove('hidden');
+    activeClient = null;
+  };
+
+  /* Close sheet on map click */
+  map.on('click', function() {
+    if (activeClient) closeSheet();
+  });
+
+  /* ── Locate me ── */
+  var userMarker = null;
+
+  window.locateMe = function() {
+    if (!navigator.geolocation) return;
+
+    var btn = document.getElementById('locateBtn');
+    btn.classList.add('locating');
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var lat = pos.coords.latitude;
+        var lng = pos.coords.longitude;
+
+        if (userMarker) {
+          userMarker.setLatLng([lat, lng]);
+        } else {
+          var userIcon = L.divIcon({
+            className: '',
+            html: '<div style="width:16px;height:16px;background:#2563eb;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(37,99,235,.3),0 2px 8px rgba(0,0,0,.2)"></div>',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
+          });
+          userMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+        }
+
+        map.setView([lat, lng], 15);
+        btn.classList.remove('locating');
+
+        if (navigator.vibrate) navigator.vibrate(50);
+      },
+      function() {
+        btn.classList.remove('locating');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  /* ── Swipe to dismiss sheet ── */
+  var sheet = document.getElementById('clientSheet');
+  var startY = 0, currentY = 0, isDragging = false;
+
+  sheet.addEventListener('touchstart', function(e) {
+    if (e.target.closest('.sheet-actions') || e.target.closest('a')) return;
+    startY = e.touches[0].clientY;
+    isDragging = true;
+  }, { passive: true });
+
+  sheet.addEventListener('touchmove', function(e) {
+    if (!isDragging) return;
+    currentY = e.touches[0].clientY;
+    var diff = currentY - startY;
+    if (diff > 0) {
+      sheet.style.transform = 'translateY(' + diff + 'px)';
+    }
+  }, { passive: true });
+
+  sheet.addEventListener('touchend', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var diff = currentY - startY;
+    if (diff > 80) {
+      closeSheet();
+    }
+    sheet.style.transform = '';
+  }, { passive: true });
+
 })();
 </script>
 {% endif %}

@@ -16,8 +16,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.static import serve
+from django.conf import settings
+import os
+
+def service_worker(request):
+    """Serve service-worker.js from root scope with correct content type."""
+    sw_path = os.path.join(settings.BASE_DIR, 'static', 'service-worker.js')
+    from django.http import FileResponse
+    return FileResponse(
+        open(sw_path, 'rb'),
+        content_type='application/javascript',
+        headers={'Service-Worker-Allowed': '/'},
+    )
 
 urlpatterns = [
+    path('service-worker.js', service_worker, name='service_worker'),
     path('admin/', admin.site.urls),
     path('rotas/', include('rotas.urls')),
     path('clientes/', include('clientes.urls')),

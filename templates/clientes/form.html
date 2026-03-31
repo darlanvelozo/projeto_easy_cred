@@ -1,39 +1,20 @@
 {% extends "base.html" %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block nav_clientes %}active{% endblock %}
+{% block bnav_clientes %}active{% endblock %}
 {% block page_title %}{{ titulo }}{% endblock %}
 {% block page_sub %}{% if cliente %}Editando {{ cliente.nome }}{% else %}Preencha os dados do cliente{% endif %}{% endblock %}
 
 {% block extra_head %}
 <style>
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem; }
-  .form-group { display: flex; flex-direction: column; gap: .3rem; }
-  .form-group.full { grid-column: 1 / -1; }
-  .form-group label { font-size: .78rem; font-weight: 600; color: var(--text-secondary); }
-  .form-group input, .form-group select, .form-group textarea {
-    padding: .55rem .75rem; border: 1px solid var(--card-border); border-radius: 8px;
-    font-size: .875rem; font-family: inherit; background: #fff; transition: border-color .15s;
-  }
-  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
-  }
-  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
-  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem 1.25rem; border-radius: 8px; font-size: .875rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
-  .btn:hover { opacity: .85; }
-  .btn-primary { background: var(--blue); color: #fff; }
-  .btn-secondary { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
-  .btn-sm { padding: .35rem .65rem; font-size: .78rem; }
-  .btn-green { background: var(--green); color: #fff; }
-  .errorlist { list-style: none; padding: 0; margin: .2rem 0 0; }
-  .errorlist li { font-size: .75rem; color: var(--red); }
-  .checkbox-group { flex-direction: row; align-items: center; gap: .5rem; }
-  .checkbox-group input { width: auto; }
-  .location-row { display: flex; gap: .5rem; align-items: end; }
-  .location-row .form-group { flex: 1; }
-  .geo-status { font-size: .72rem; color: var(--text-muted); margin-top: .3rem; }
+  .checkbox-group { flex-direction: row !important; align-items: center; gap: .5rem; }
+  .checkbox-group input { width: auto; min-height: auto; }
+  .location-row { display: flex; gap: .5rem; align-items: end; flex-wrap: wrap; }
+  .location-row .form-group { flex: 1; min-width: 120px; margin: 0; }
+  .geo-status { font-size: .75rem; color: var(--text-muted); margin-top: .35rem; }
   .geo-status.success { color: var(--green); }
   .geo-status.error { color: var(--red); }
-  @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-actions { display: flex; gap: .75rem; margin-top: 1.5rem; flex-wrap: wrap; }
 </style>
 {% endblock %}
 
@@ -88,15 +69,15 @@
         <div class="form-group full">
           <label style="margin-bottom:.3rem">Localizacao (GPS)</label>
           <div class="location-row">
-            <div class="form-group" style="margin:0">
+            <div class="form-group">
               <label for="id_latitude" style="font-size:.7rem">Latitude</label>
               {{ form.latitude }}
             </div>
-            <div class="form-group" style="margin:0">
+            <div class="form-group">
               <label for="id_longitude" style="font-size:.7rem">Longitude</label>
               {{ form.longitude }}
             </div>
-            <button type="button" class="btn btn-sm btn-green" id="btn-gps" onclick="captureGPS()">
+            <button type="button" class="btn btn-green btn-sm" id="btn-gps" onclick="captureGPS()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
               Usar GPS
             </button>
@@ -111,7 +92,7 @@
           <label for="id_limite_credito">Limite de credito (R$)</label>
           {{ form.limite_credito }}
           {{ form.limite_credito.errors }}
-          <small style="font-size:.7rem;color:var(--text-muted)">Opcional. Se vazio, usa o limite da rota.</small>
+          <small style="font-size:.72rem;color:var(--text-muted)">Opcional. Se vazio, usa o limite da rota.</small>
         </div>
         {% endif %}
 
@@ -132,10 +113,10 @@
 {% block extra_js %}
 <script>
 function captureGPS() {
-  const status = document.getElementById('geo-status');
-  const lat = document.getElementById('id_latitude');
-  const lng = document.getElementById('id_longitude');
-  const btn = document.getElementById('btn-gps');
+  var status = document.getElementById('geo-status');
+  var lat = document.getElementById('id_latitude');
+  var lng = document.getElementById('id_longitude');
+  var btn = document.getElementById('btn-gps');
 
   if (!navigator.geolocation) {
     status.textContent = 'Geolocalizacao nao suportada pelo navegador.';
@@ -154,6 +135,7 @@ function captureGPS() {
       status.textContent = 'Localizacao capturada com sucesso!';
       status.className = 'geo-status success';
       btn.disabled = false;
+      if (navigator.vibrate) navigator.vibrate(50);
     },
     function(err) {
       status.textContent = 'Erro: ' + err.message;

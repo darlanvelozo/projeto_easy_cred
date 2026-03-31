@@ -1,27 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Rotas{% endblock %}
 {% block nav_rotas %}active{% endblock %}
+{% block bnav_rotas %}active{% endblock %}
+{% block bnav_rotas_a %}active{% endblock %}
 {% block page_title %}Rotas{% endblock %}
 {% block page_sub %}Rotas da {{ request.user.empresa.nome }}{% endblock %}
 
 {% block extra_head %}
 <style>
-  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 6px; font-size: .75rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
-  .btn:hover { opacity: .85; }
-  .btn-blue { background: var(--blue); color: #fff; }
-  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
+  .mobile-card-list { display: none; }
+  .rota-card {
+    display: block; padding: 1rem; border-bottom: 1px solid var(--card-border);
+    text-decoration: none; color: inherit; transition: background .15s;
+  }
+  .rota-card:active { background: #f8fafc; }
+  .rota-card:last-child { border-bottom: none; }
+  .rota-card-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .5rem; }
+  .rota-card-name { font-size: .9rem; font-weight: 600; }
+  .rota-card-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .35rem; }
+  .rota-stat { text-align: center; padding: .4rem; background: var(--page-bg); border-radius: 6px; }
+  .rota-stat-value { font-size: .85rem; font-weight: 700; }
+  .rota-stat-label { font-size: .62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .rota-card-saldo { font-size: .85rem; font-weight: 700; color: var(--green); margin-top: .4rem; text-align: right; }
+
+  @media (max-width: 768px) {
+    .desktop-table { display: none; }
+    .mobile-card-list { display: block; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="card">
+<!-- Desktop Table -->
+<div class="card desktop-table">
   <div class="card-header">
     <div>
       <div class="card-title">Rotas cadastradas</div>
       <div class="card-sub">{{ rotas|length }} rota{{ rotas|length|pluralize:"s" }}</div>
     </div>
     {% if request.user.perfil == 'admin' %}
-    <a href="{% url 'rotas:criar' %}" class="btn btn-blue">+ Nova Rota</a>
+    <a href="{% url 'rotas:criar' %}" class="btn btn-primary btn-sm">+ Nova Rota</a>
     {% endif %}
   </div>
   <div class="table-wrap">
@@ -31,8 +49,8 @@
           <th>Nome</th>
           <th>Vendedores</th>
           <th>Clientes</th>
-          <th>Emprést. Ativos</th>
-          <th>Configuração</th>
+          <th>Emprest. Ativos</th>
+          <th>Configuracao</th>
           <th>Saldo Caixa</th>
           <th>Status</th>
           <th></th>
@@ -48,23 +66,18 @@
           <td class="td-muted">
             {% if rota.configuracao %}
               {{ rota.configuracao.get_periodicidade_padrao_display }} · {{ rota.configuracao.taxa_juros_padrao }}% · {{ rota.configuracao.num_parcelas_padrao }}x
-            {% else %}
-              —
-            {% endif %}
+            {% else %}-{% endif %}
           </td>
           <td style="font-weight:600;color:var(--green)">
             {% if rota.caixa %}R$ {{ rota.caixa.saldo|floatformat:2 }}{% else %}R$ 0,00{% endif %}
           </td>
           <td>
-            {% if rota.ativa %}
-            <span class="badge badge-green">Ativa</span>
-            {% else %}
-            <span class="badge badge-gray">Inativa</span>
-            {% endif %}
+            {% if rota.ativa %}<span class="badge badge-green">Ativa</span>
+            {% else %}<span class="badge badge-gray">Inativa</span>{% endif %}
           </td>
           <td>
             {% if request.user.perfil == 'admin' %}
-            <a href="{% url 'rotas:editar' rota.pk %}" class="btn btn-outline">Editar</a>
+            <a href="{% url 'rotas:editar' rota.pk %}" class="btn btn-secondary btn-sm">Editar</a>
             {% endif %}
           </td>
         </tr>
@@ -74,5 +87,46 @@
       </tbody>
     </table>
   </div>
+</div>
+
+<!-- Mobile Card List -->
+<div class="card mobile-card-list">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Rotas</div>
+      <div class="card-sub">{{ rotas|length }} rota{{ rotas|length|pluralize:"s" }}</div>
+    </div>
+    {% if request.user.perfil == 'admin' %}
+    <a href="{% url 'rotas:criar' %}" class="btn btn-primary btn-sm">+ Nova</a>
+    {% endif %}
+  </div>
+  {% for rota in rotas %}
+  <a href="{% url 'rotas:detalhe' rota.pk %}" class="rota-card">
+    <div class="rota-card-top">
+      <div class="rota-card-name">{{ rota.nome }}</div>
+      {% if rota.ativa %}<span class="badge badge-green">Ativa</span>
+      {% else %}<span class="badge badge-gray">Inativa</span>{% endif %}
+    </div>
+    <div class="rota-card-stats">
+      <div class="rota-stat">
+        <div class="rota-stat-value">{{ rota.total_vendedores }}</div>
+        <div class="rota-stat-label">Vendedores</div>
+      </div>
+      <div class="rota-stat">
+        <div class="rota-stat-value">{{ rota.total_clientes }}</div>
+        <div class="rota-stat-label">Clientes</div>
+      </div>
+      <div class="rota-stat">
+        <div class="rota-stat-value">{{ rota.total_emprestimos }}</div>
+        <div class="rota-stat-label">Emprestimos</div>
+      </div>
+    </div>
+    <div class="rota-card-saldo">
+      {% if rota.caixa %}R$ {{ rota.caixa.saldo|floatformat:2 }}{% else %}R$ 0,00{% endif %}
+    </div>
+  </a>
+  {% empty %}
+  <div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:.85rem">Nenhuma rota cadastrada.</div>
+  {% endfor %}
 </div>
 {% endblock %}

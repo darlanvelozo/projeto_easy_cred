@@ -112,6 +112,9 @@ systempaytec/
 - [x] **Pagamento parcial** — multiplos pagamentos por parcela, quitacao quando soma >= valor
 - [x] **Multa e juros de mora** — configurados por rota, calculados automaticamente
 - [x] **CRUD de Rotas completo** — criar e editar rotas pelo admin
+- [x] **PWA completo** — manifest.json, service-worker.js, icones SVG, instalavel no celular
+- [x] **Responsividade mobile-first** — bottom nav, FAB, touch targets 44px, card views mobile
+- [x] **Mapa interativo avancado** — markers por status, busca, filtros, bottom sheet, GPS, navegacao
 - [x] 23 templates, 27 clientes, 32 emprestimos de demonstracao
 
 ---
@@ -125,6 +128,9 @@ systempaytec/
 | MovimentacaoFinanceira como unica porta | Rastreabilidade total do caixa |
 | Signals para automacao | Desacoplamento entre apps |
 | Leaflet/OpenStreetMap para mapa | Gratuito, sem API key |
+| PWA com Service Worker | App instalavel, cache offline, experiencia nativa |
+| Bottom nav + FAB no mobile | UX de app nativo para vendedor de campo |
+| Markers coloridos no mapa | Status visual instantaneo (em dia, cobranca, inadimplente) |
 | SQLite em dev | Simplicidade; PostgreSQL em producao |
 | python-dateutil | Calculo de vencimentos com relativedelta |
 

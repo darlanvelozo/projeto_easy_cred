@@ -1,43 +1,65 @@
 {% extends "base.html" %}
 {% block title %}Emprestimo #{{ emp.pk }}{% endblock %}
 {% block nav_emprestimos %}active{% endblock %}
+{% block bnav_emprestimos %}active{% endblock %}
 {% block page_title %}Emprestimo #{{ emp.pk }}{% endblock %}
 {% block page_sub %}{{ emp.cliente.nome }} — {{ emp.rota.nome }}{% endblock %}
 
 {% block extra_head %}
 <style>
-  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
-  .info-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius); padding: 1rem 1.25rem; }
-  .info-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
-  .info-value { font-size: 1.3rem; font-weight: 800; margin-top: .25rem; }
-  .info-sub { font-size: .78rem; color: var(--text-muted); margin-top: .2rem; }
-  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 6px; font-size: .75rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
-  .btn:hover { opacity: .85; }
-  .btn-green { background: var(--green); color: #fff; }
-  .btn-yellow { background: var(--yellow); color: #fff; }
-  .btn-red { background: var(--red); color: #fff; }
-  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
-  .back-link { display: inline-flex; align-items: center; gap: .3rem; font-size: .85rem; color: var(--text-muted); text-decoration: none; margin-bottom: 1rem; }
+  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1rem; }
+  .info-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius); padding: .85rem 1rem; }
+  .info-label { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+  .info-value { font-size: 1.15rem; font-weight: 800; margin-top: .2rem; }
+  .info-sub { font-size: .75rem; color: var(--text-muted); margin-top: .15rem; }
+  .back-link { display: inline-flex; align-items: center; gap: .3rem; font-size: .85rem; color: var(--text-muted); text-decoration: none; margin-bottom: .75rem; min-height: 44px; }
   .back-link:hover { color: var(--blue); }
-  .actions-bar { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
+  .actions-bar { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
   .valor-restante { font-size: .7rem; color: var(--yellow); font-weight: 500; }
   .valor-pago-info { font-size: .7rem; color: var(--green); font-weight: 500; }
-  @media (max-width: 768px) { .info-grid { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 480px) { .info-grid { grid-template-columns: 1fr; } }
+
+  /* Mobile parcela cards */
+  .parcela-mobile-list { display: none; }
+  .parcela-mob {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .85rem 1rem; border-bottom: 1px solid var(--card-border); gap: .5rem;
+  }
+  .parcela-mob:last-child { border-bottom: none; }
+  .parcela-mob-info { flex: 1; min-width: 0; }
+  .parcela-mob-num { font-size: .82rem; font-weight: 600; }
+  .parcela-mob-meta { font-size: .7rem; color: var(--text-muted); margin-top: .1rem; }
+  .parcela-mob-right { display: flex; flex-direction: column; align-items: flex-end; gap: .25rem; flex-shrink: 0; }
+  .parcela-mob-valor { font-size: .88rem; font-weight: 700; }
+  .parcela-mob-btn {
+    display: inline-flex; align-items: center; gap: .2rem;
+    padding: .3rem .6rem; font-size: .7rem; font-weight: 600;
+    background: var(--green); color: #fff; border-radius: 6px;
+    text-decoration: none; min-height: 32px;
+  }
+  .parcela-mob-btn:active { opacity: .85; }
+
+  @media (max-width: 768px) {
+    .info-grid { grid-template-columns: 1fr 1fr; }
+    .parcela-desktop { display: none; }
+    .parcela-mobile-list { display: block; }
+  }
+  @media (max-width: 480px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .info-value { font-size: 1rem; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <a href="{% url 'emprestimos:lista' %}" class="back-link">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-  Voltar para emprestimos
+  Voltar
 </a>
 
-<!-- Acoes -->
 {% if emp.status == 'ativo' or emp.status == 'inadimplente' %}
 {% if request.user.perfil == 'admin' %}
 <div class="actions-bar">
-  <a href="{% url 'emprestimos:cancelar' emp.pk %}" class="btn btn-red">Cancelar Emprestimo</a>
+  <a href="{% url 'emprestimos:cancelar' emp.pk %}" class="btn btn-red btn-sm">Cancelar Emprestimo</a>
 </div>
 {% endif %}
 {% endif %}
@@ -56,8 +78,8 @@
   </div>
   <div class="info-item">
     <div class="info-label">Periodicidade</div>
-    <div class="info-value">{{ emp.get_periodicidade_display }}</div>
-    <div class="info-sub">Vendedor: {{ emp.vendedor.get_full_name|default:emp.vendedor.username }}</div>
+    <div class="info-value" style="font-size:1rem">{{ emp.get_periodicidade_display }}</div>
+    <div class="info-sub">{{ emp.vendedor.get_full_name|default:emp.vendedor.username }}</div>
   </div>
   <div class="info-item">
     <div class="info-label">Status</div>
@@ -67,7 +89,7 @@
       {% elif emp.status == 'inadimplente' %}<span class="badge badge-red">Inadimplente</span>
       {% else %}<span class="badge badge-gray">Cancelado</span>{% endif %}
     </div>
-    <div class="info-sub">Criado em {{ emp.criado_em|date:"d/m/Y" }}</div>
+    <div class="info-sub">{{ emp.criado_em|date:"d/m/Y" }}</div>
   </div>
 </div>
 
@@ -79,19 +101,11 @@
       <div class="card-sub">{{ parcelas|length }} parcela{{ parcelas|length|pluralize:"s" }}</div>
     </div>
   </div>
-  <div class="table-wrap">
+
+  <!-- Desktop table -->
+  <div class="table-wrap parcela-desktop">
     <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Valor</th>
-          <th>Pago</th>
-          <th>Vencimento</th>
-          <th>Status</th>
-          <th>Pago em</th>
-          <th>Acao</th>
-        </tr>
-      </thead>
+      <thead><tr><th>#</th><th>Valor</th><th>Pago</th><th>Vencimento</th><th>Status</th><th>Pago em</th><th>Acao</th></tr></thead>
       <tbody>
         {% for p in parcelas %}
         <tr>
@@ -100,12 +114,8 @@
           <td>
             {% if p.total_pago > 0 %}
               <span class="valor-pago-info">R$ {{ p.total_pago|floatformat:2 }}</span>
-              {% if p.valor_restante > 0 %}
-                <br><span class="valor-restante">Resta: R$ {{ p.valor_restante|floatformat:2 }}</span>
-              {% endif %}
-            {% else %}
-              <span class="td-muted">—</span>
-            {% endif %}
+              {% if p.valor_restante > 0 %}<br><span class="valor-restante">Resta: R$ {{ p.valor_restante|floatformat:2 }}</span>{% endif %}
+            {% else %}<span class="td-muted">-</span>{% endif %}
           </td>
           <td class="td-muted">{{ p.vencimento|date:"d/m/Y" }}</td>
           <td>
@@ -114,27 +124,52 @@
             {% elif p.status == 'cancelada' %}<span class="badge badge-gray">Cancelada</span>
             {% else %}<span class="badge badge-yellow">Pendente</span>{% endif %}
           </td>
-          <td class="td-muted">{% if p.pago_em %}{{ p.pago_em|date:"d/m/Y H:i" }}{% else %}—{% endif %}</td>
+          <td class="td-muted">{% if p.pago_em %}{{ p.pago_em|date:"d/m/Y H:i" }}{% else %}-{% endif %}</td>
           <td>
             {% if p.status == 'pendente' or p.status == 'atrasada' %}
               {% if p.valor_restante > 0 %}
-              <a href="{% url 'financeiro:registrar_pagamento' p.pk %}" class="btn btn-green">Pagar</a>
+              <a href="{% url 'financeiro:registrar_pagamento' p.pk %}" class="btn btn-green btn-sm">Pagar</a>
               {% endif %}
-            {% else %}
-            <span class="td-muted">—</span>
-            {% endif %}
+            {% else %}<span class="td-muted">-</span>{% endif %}
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
+  <!-- Mobile list -->
+  <div class="parcela-mobile-list">
+    {% for p in parcelas %}
+    <div class="parcela-mob">
+      <div class="parcela-mob-info">
+        <div class="parcela-mob-num">Parcela {{ p.numero }}/{{ emp.num_parcelas }}</div>
+        <div class="parcela-mob-meta">
+          Venc. {{ p.vencimento|date:"d/m/Y" }}
+          {% if p.total_pago > 0 %} · Pago: R$ {{ p.total_pago|floatformat:2 }}{% endif %}
+        </div>
+      </div>
+      <div class="parcela-mob-right">
+        <div class="parcela-mob-valor">R$ {{ p.valor|floatformat:2 }}</div>
+        {% if p.status == 'paga' %}<span class="badge badge-green">Paga</span>
+        {% elif p.status == 'atrasada' %}<span class="badge badge-red">Atrasada</span>
+        {% elif p.status == 'cancelada' %}<span class="badge badge-gray">Cancelada</span>
+        {% else %}<span class="badge badge-yellow">Pendente</span>{% endif %}
+        {% if p.status == 'pendente' or p.status == 'atrasada' %}
+          {% if p.valor_restante > 0 %}
+          <a href="{% url 'financeiro:registrar_pagamento' p.pk %}" class="parcela-mob-btn">Pagar</a>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
 </div>
 
 {% if emp.observacao %}
-<div class="card" style="margin-top:1.25rem">
-  <div class="card-header"><div><div class="card-title">Observacao</div></div></div>
-  <div class="card-body"><p style="font-size:.875rem;color:var(--text-secondary);margin:0;white-space:pre-line">{{ emp.observacao }}</p></div>
+<div class="card" style="margin-top:1rem">
+  <div class="card-header"><div class="card-title">Observacao</div></div>
+  <div class="card-body"><p style="font-size:.85rem;color:var(--text-secondary);margin:0;white-space:pre-line">{{ emp.observacao }}</p></div>
 </div>
 {% endif %}
 {% endblock %}

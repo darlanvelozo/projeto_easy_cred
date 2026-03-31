@@ -171,27 +171,43 @@
 
 ---
 
-## ETAPA 6 — Experiencia do Vendedor (Mobile)
+## ETAPA 6 — Experiencia do Vendedor (Mobile) (parcialmente concluida)
 > **Prioridade: MEDIA** — O vendedor e o principal usuario do sistema no dia a dia.
 
-### 6.1 PWA (Progressive Web App)
-- [ ] manifest.json + service worker
-- [ ] Icone na tela inicial do celular
-- [ ] Funcionar offline basico (cache de paginas ja visitadas)
+### 6.1 PWA (Progressive Web App) ✅
+- [x] manifest.json com nome, icones, shortcuts, display standalone
+- [x] Service worker com cache-first para assets, network-first para paginas, offline fallback
+- [x] Icones SVG (192px e 512px, normal + maskable)
+- [x] Meta tags Apple/Android (apple-mobile-web-app-capable, theme-color, viewport-fit)
+- [x] Banner de instalacao com prompt nativo
+- [x] Funcionar offline basico (cache de paginas ja visitadas)
 
-### 6.2 Tela de cobranca otimizada
-- [ ] View dedicada: lista de clientes do dia com parcelas pendentes
-- [ ] Swipe ou botao rapido para registrar pagamento
-- [ ] Confirmar com 1 toque (valor pre-preenchido)
-- [ ] Feedback visual (verde = pago)
+### 6.2 UX Mobile-First ✅
+- [x] Bottom navigation bar por perfil (vendedor, gerente, admin)
+- [x] Floating Action Button (FAB) nas paginas de lista
+- [x] Quick Actions no dashboard do vendedor (Novo Emprestimo, Novo Cliente, Mapa, Clientes)
+- [x] Card views no mobile (tabelas convertidas em listas de cards)
+- [x] Touch targets minimos de 44px em todos os botoes/links
+- [x] Formularios responsivos (2 colunas desktop, 1 coluna mobile)
+- [x] Safe area support para notch (iPhone X+)
+- [x] Haptic feedback ao tocar botoes
+- [x] Body scroll lock quando sidebar aberta
+- [x] Animacoes suaves (fade-in, transitions)
 
-### 6.3 Roteiro do dia com mapa
-- [ ] Ordenar clientes por proximidade geografica
-- [ ] Rota otimizada no mapa (ponto a ponto)
-- [ ] Marcar clientes ja visitados
+### 6.3 Mapa Interativo Avancado ✅
+- [x] Markers coloridos por status (em dia, cobranca hoje, inadimplente, sem emprestimo)
+- [x] Busca flutuante sobre o mapa com filtro em tempo real
+- [x] Filtros rapidos por chips (Todos, Cobranca hoje, Inadimplentes)
+- [x] Bottom sheet com detalhes do cliente (metricas, dados, acoes)
+- [x] Botao "Ligar" (tel: link direto) e "Navegar" (Google Maps)
+- [x] GPS "Minha localizacao" para vendedor se localizar
+- [x] Swipe-to-dismiss no bottom sheet
+- [x] Dados enriquecidos via backend (emprestimos, parcelas, atrasos)
 
-### 6.4 Cadastro rapido de cliente
-- [ ] Formulario simplificado (nome, telefone, GPS — so o essencial)
+### 6.4 Ainda pendente
+- [ ] Ordenar clientes por proximidade geografica no mapa
+- [ ] Marcar clientes ja visitados no mapa
+- [ ] Formulario simplificado de cadastro rapido (nome, telefone, GPS)
 - [ ] Foto do documento via camera do celular
 - [ ] Cadastro + emprestimo em sequencia
 

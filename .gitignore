@@ -15,8 +15,12 @@ env/
 *.sqlite3
 *.log
 local_settings.py
-/static/
 /media/
+
+# Static — ignora collectstatic mas versiona os fontes
+/staticfiles/
+!/static/
+!/static/**
 
 # Environment variables
 .env

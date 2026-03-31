@@ -6,32 +6,38 @@
 
 {% block extra_head %}
 <style>
-  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
-  .info-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius); padding: 1rem 1.25rem; }
-  .info-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
-  .info-value { font-size: 1.3rem; font-weight: 800; margin-top: .25rem; }
-  .info-sub { font-size: .78rem; color: var(--text-muted); margin-top: .2rem; }
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
-  .back-link { display: inline-flex; align-items: center; gap: .3rem; font-size: .85rem; color: var(--text-muted); text-decoration: none; margin-bottom: 1rem; }
+  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1rem; }
+  .info-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius); padding: .85rem 1rem; }
+  .info-label { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+  .info-value { font-size: 1.15rem; font-weight: 800; margin-top: .2rem; }
+  .info-sub { font-size: .75rem; color: var(--text-muted); margin-top: .15rem; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .back-link { display: inline-flex; align-items: center; gap: .3rem; font-size: .85rem; color: var(--text-muted); text-decoration: none; margin-bottom: .75rem; min-height: 44px; }
   .back-link:hover { color: var(--blue); }
-  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .7rem; border-radius: 6px; font-size: .75rem; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: opacity .15s; }
-  .btn:hover { opacity: .85; }
-  .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-secondary); }
-  .config-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1.25rem; }
-  .config-item { background: var(--page-bg); border-radius: 8px; padding: .75rem; text-align: center; }
-  .config-val { font-size: 1rem; font-weight: 700; }
-  .config-lbl { font-size: .7rem; color: var(--text-muted); margin-top: .1rem; }
-  @media (max-width: 768px) { .info-grid { grid-template-columns: 1fr 1fr; } .two-col { grid-template-columns: 1fr; } .config-grid { grid-template-columns: 1fr 1fr; } }
+  .config-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-bottom: 1rem; }
+  .config-item { background: var(--page-bg); border-radius: 8px; padding: .65rem; text-align: center; }
+  .config-val { font-size: .95rem; font-weight: 700; }
+  .config-lbl { font-size: .65rem; color: var(--text-muted); margin-top: .1rem; }
+
+  @media (max-width: 768px) {
+    .info-grid { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .config-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .info-value { font-size: 1rem; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <a href="{% url 'rotas:lista' %}" class="back-link">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-  Voltar para rotas
+  Voltar
 </a>
 
-<!-- Métricas -->
+<!-- Metricas -->
 <div class="info-grid">
   <div class="info-item">
     <div class="info-label">Saldo Caixa</div>
@@ -40,10 +46,10 @@
   <div class="info-item">
     <div class="info-label">Carteira Ativa</div>
     <div class="info-value" style="color:var(--blue)">R$ {{ carteira|floatformat:2 }}</div>
-    <div class="info-sub">{{ emprestimos_ativos|length }} empréstimos</div>
+    <div class="info-sub">{{ emprestimos_ativos|length }} emprestimos</div>
   </div>
   <div class="info-item">
-    <div class="info-label">Inadimplência</div>
+    <div class="info-label">Inadimplencia</div>
     <div class="info-value" style="color:var(--red)">R$ {{ parcelas_atrasadas|floatformat:2 }}</div>
     <div class="info-sub">{{ total_inadimplentes }} inadimplente{{ total_inadimplentes|pluralize:"s" }}</div>
   </div>
@@ -54,30 +60,16 @@
   </div>
 </div>
 
-<!-- Configuração -->
 {% if rota.configuracao %}
 <div class="config-grid">
-  <div class="config-item">
-    <div class="config-val">{{ rota.configuracao.taxa_juros_padrao }}%</div>
-    <div class="config-lbl">Taxa de Juros</div>
-  </div>
-  <div class="config-item">
-    <div class="config-val">{{ rota.configuracao.get_periodicidade_padrao_display }}</div>
-    <div class="config-lbl">Periodicidade</div>
-  </div>
-  <div class="config-item">
-    <div class="config-val">{{ rota.configuracao.num_parcelas_padrao }}x</div>
-    <div class="config-lbl">Parcelas</div>
-  </div>
-  <div class="config-item">
-    <div class="config-val">{% if rota.configuracao.limite_emprestimo_max %}R$ {{ rota.configuracao.limite_emprestimo_max|floatformat:2 }}{% else %}—{% endif %}</div>
-    <div class="config-lbl">Limite Máx.</div>
-  </div>
+  <div class="config-item"><div class="config-val">{{ rota.configuracao.taxa_juros_padrao }}%</div><div class="config-lbl">Taxa Juros</div></div>
+  <div class="config-item"><div class="config-val">{{ rota.configuracao.get_periodicidade_padrao_display }}</div><div class="config-lbl">Periodicidade</div></div>
+  <div class="config-item"><div class="config-val">{{ rota.configuracao.num_parcelas_padrao }}x</div><div class="config-lbl">Parcelas</div></div>
+  <div class="config-item"><div class="config-val">{% if rota.configuracao.limite_emprestimo_max %}R$ {{ rota.configuracao.limite_emprestimo_max|floatformat:0 }}{% else %}-{% endif %}</div><div class="config-lbl">Limite Max</div></div>
 </div>
 {% endif %}
 
 <div class="two-col">
-  <!-- Vendedores -->
   <div class="card">
     <div class="card-header"><div><div class="card-title">Vendedores</div><div class="card-sub">{{ vendedores|length }} vinculado{{ vendedores|length|pluralize:"s" }}</div></div></div>
     <div class="table-wrap">
@@ -97,7 +89,6 @@
     </div>
   </div>
 
-  <!-- Clientes da rota -->
   <div class="card">
     <div class="card-header"><div><div class="card-title">Clientes</div><div class="card-sub">{{ clientes|length }} ativo{{ clientes|length|pluralize:"s" }}</div></div></div>
     <div class="table-wrap">
@@ -107,8 +98,8 @@
           {% for c in clientes %}
           <tr>
             <td style="font-weight:500">{{ c.nome }}</td>
-            <td class="td-muted">{{ c.telefone|default:"—" }}</td>
-            <td><a href="{% url 'clientes:detalhe' c.pk %}" class="btn btn-outline">Ver</a></td>
+            <td class="td-muted">{{ c.telefone|default:"-" }}</td>
+            <td><a href="{% url 'clientes:detalhe' c.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
           </tr>
           {% empty %}
           <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:1.5rem">Nenhum cliente.</td></tr>
@@ -119,17 +110,14 @@
   </div>
 </div>
 
-<!-- Empréstimos ativos -->
 <div class="card">
   <div class="card-header">
-    <div><div class="card-title">Empréstimos ativos</div><div class="card-sub">{{ emprestimos_ativos|length }} empréstimo{{ emprestimos_ativos|length|pluralize:"s" }}</div></div>
-    <a href="{% url 'financeiro:caixa_movimentacoes' rota.pk %}" class="btn btn-outline">Ver movimentações</a>
+    <div><div class="card-title">Emprestimos ativos</div><div class="card-sub">{{ emprestimos_ativos|length }}</div></div>
+    <a href="{% url 'financeiro:caixa_movimentacoes' rota.pk %}" class="btn btn-secondary btn-sm">Movimentacoes</a>
   </div>
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr><th>Cliente</th><th>Vendedor</th><th>Principal</th><th>Total</th><th>Parc.</th><th>Data</th><th></th></tr>
-      </thead>
+      <thead><tr><th>Cliente</th><th>Vendedor</th><th>Principal</th><th>Total</th><th>Parc.</th><th>Data</th><th></th></tr></thead>
       <tbody>
         {% for e in emprestimos_ativos %}
         <tr>
@@ -139,10 +127,10 @@
           <td style="font-weight:600">R$ {{ e.valor_total|floatformat:2 }}</td>
           <td class="td-muted">{{ e.num_parcelas }}x</td>
           <td class="td-muted">{{ e.criado_em|date:"d/m/Y" }}</td>
-          <td><a href="{% url 'emprestimos:detalhe' e.pk %}" class="btn btn-outline">Ver</a></td>
+          <td><a href="{% url 'emprestimos:detalhe' e.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum empréstimo ativo.</td></tr>
+        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhum emprestimo ativo.</td></tr>
         {% endfor %}
       </tbody>
     </table>
